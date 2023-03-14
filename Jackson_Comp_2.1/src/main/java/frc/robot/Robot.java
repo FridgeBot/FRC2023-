@@ -5,12 +5,9 @@
 package frc.robot;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 //import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.kauailabs.navx.frc.AHRS;
-
 
 import edu.wpi.first.cameraserver.CameraServer;
 //import edu.wpi.first.hal.FRCNetComm;
@@ -55,13 +52,10 @@ public class Robot extends TimedRobot {
     WPI_TalonFX BL = new WPI_TalonFX(2);
     WPI_TalonFX FR = new WPI_TalonFX(1);
     WPI_TalonFX FL = new WPI_TalonFX(3);
-    //Grabber Motors
-    WPI_TalonSRX LGrabber = new WPI_TalonSRX(0);
-    WPI_TalonSRX RGrabber = new WPI_TalonSRX(0);
-    //arm motors
-    WPI_TalonFX ArmMotor = new WPI_TalonFX(0);
     //low wheels
     WPI_TalonFX LW = new WPI_TalonFX(11);
+    //ArmMotor Motor
+    WPI_TalonFX ArmMotor = new WPI_TalonFX(10);
     //Joysicks
     Joystick Joy = new Joystick(0);
     Joystick Bitterness = new Joystick(1);
@@ -75,14 +69,13 @@ public class Robot extends TimedRobot {
 
     private static final String Middle_April = "Middle_April";
     private static final String Side_April = "Side_April";
+    private static final String Left_April = "Left_April";
     private static final String Balance_Test = "Balance_Test";
     private static final String Time_Balance_Test = "Time_Balance_Test";
     private static final String Score_High_Cube = "ScoreHighCube";
     private static final String Middle_April_Extended = "Middle_April_Extended";
     private static final String Time_Side_April = "Time_Side_April";
     private static final String Side_No_Score = "Side_No_Score";
-    private static final String Encoder_Back = "Encoder_Back";
-    private static final String Mid_Full_Test = "Mid_Full_Test";
 
     private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -92,7 +85,6 @@ public class Robot extends TimedRobot {
     //joystick dead zone double values
     //double joyX;
     //double joyY;
-    // commeeeeent
 
     // joy button mapping 
     int axisX = 0;// axis 1
@@ -146,7 +138,6 @@ public class Robot extends TimedRobot {
     int balance_flag = 0;
     
     double InMConverter = 0.0254;
-    double distEncode = 26465/18; //26,465 units per 18 inches
     
     double Pitch;
     double DistX;
@@ -154,14 +145,11 @@ public class Robot extends TimedRobot {
     //Vars for auto-balance
     double PitchHolder = 2;
     int SwayCounter = 0;
-    double Balance_Dist = 0;
     
     double Target;
     double area;
 
     int PitchInt = (int)Pitch;
-
-    double bLeftPos;
     
     
     //public void mechs
@@ -179,6 +167,12 @@ public class Robot extends TimedRobot {
     Compressor compressor = new Compressor(PneumaticsModuleType.REVPH);
     //low wheels
     Solenoid LWS = new Solenoid(PneumaticsModuleType.CTREPCM, 6);
+    Solenoid StickIn = new Solenoid(PneumaticsModuleType.CTREPCM, 3);
+    Solenoid StickOut = new Solenoid(PneumaticsModuleType.CTREPCM, 2);
+    Solenoid GrabberIn = new Solenoid(PneumaticsModuleType.CTREPCM, 4);
+    Solenoid GrabberOut = new Solenoid(PneumaticsModuleType.CTREPCM, 5);
+    Solenoid ArmSolenoid = new Solenoid(PneumaticsModuleType.CTREPCM, 7);
+    
     
     /**
      * This function is run when the robot is first started up and should be used for any
@@ -200,6 +194,7 @@ public class Robot extends TimedRobot {
       BR.setInverted(true);
       FR.setInverted(true);
       
+      ArmMotor.setInverted(true);
       
       compressor.enableDigital();
       
@@ -229,38 +224,37 @@ public class Robot extends TimedRobot {
       //UpperArmLimitVar = UpperArmLimit.getVoltage();
       //LowerArmLimitVar = LowerArmLimit.getVoltage();
 
-      SmartDashboard.putData("Auto choices", m_chooser);
-      m_chooser.addOption("Middle_April", Middle_April);
-      m_chooser.addOption("Nothing", Middle_April);
-      m_chooser.addOption("Side_April", Side_April);
-      m_chooser.addOption("Balance_Test", Balance_Test);
-      m_chooser.addOption("Time_Balance_Test", Time_Balance_Test);
-      m_chooser.addOption("Score_Hight_Cube", Score_High_Cube);
-      m_chooser.addOption("Middle_April_Extended", Middle_April_Extended);
-      m_chooser.addOption("Time_Side_April", Time_Side_April);
-      m_chooser.addOption("Side_No_Score", Side_No_Score);
-      m_chooser.addOption("Encoder_Back", Encoder_Back);
-      m_chooser.addOption("Mid_Full_Test", Mid_Full_Test);
+    SmartDashboard.putData("Auto choices", m_chooser);
+    m_chooser.addOption("Middle_April", Middle_April);
+    m_chooser.addOption("Nothing", Middle_April);
+    m_chooser.addOption("Side_April", Side_April);
+    m_chooser.addOption("Balance_Test", Balance_Test);
+    m_chooser.addOption("Time_Balance_Test", Time_Balance_Test);
+    m_chooser.addOption("Score_Hight_Cube", Score_High_Cube);
+    m_chooser.addOption("Middle_April_Extended", Middle_April_Extended);
+    m_chooser.addOption("Time_Side_April", Time_Side_April);
+    m_chooser.addOption("Side_No_Score", Side_No_Score);
+    
+    SmartDashboard.putBoolean("Solenoid ArmMotor", ArmSolenoid.get());
+    SmartDashboard.putBoolean("Solenoid LWS", LWS.get());
+    SmartDashboard.putBoolean("GrabberIn", GrabberIn.get());
+    SmartDashboard.putBoolean("GrabberOut", GrabberOut.get());
+    SmartDashboard.putBoolean("grabberIn", StickIn.get());
+    SmartDashboard.putBoolean("grabberOut", StickOut.get());
+    SmartDashboard.putNumber("Pitch", Pitch);
+    SmartDashboard.putNumber("SwayCounter", SwayCounter);
+    SmartDashboard.putNumber("Alex Dispacement X", DistX);
+    SmartDashboard.putNumber("Upper LimitSwitch", UpperArmLimit.getVoltage());
+    SmartDashboard.putNumber("Lower Limit Switch", LowerArmLimit.getVoltage());
+    SmartDashboard.putNumber("auton_timer", auton_timer.get());
+    SmartDashboard.putNumber("pvm", pvm);
+    SmartDashboard.putNumber("score_timer", score_timer.get());
+    SmartDashboard.putNumber("balance speed", (-1*Integer.signum(PitchInt)*0.15)/((auton_timer.get())*0.1+2));
+    SmartDashboard.putNumber("Area", area);
+    SmartDashboard.putNumber("fl", fl);
+    // SmartDashboard.putNumber("LowerArmLimitVar", LowerArmLimitVar);
+    // SmartDashboard.putNumber("UpperArmLimitVar", UpperArmLimitVar);
 
-      bLeftPos = BL.getSelectedSensorPosition(TalonFXFeedbackDevice.IntegratedSensor.value);
-      
-      SmartDashboard.putBoolean("Solenoid LWS", LWS.get());
-      SmartDashboard.putNumber("Pitch", Pitch);
-      SmartDashboard.putNumber("SwayCounter", SwayCounter);
-      SmartDashboard.putNumber("Alex Dispacement X", DistX);
-      SmartDashboard.putNumber("Upper LimitSwitch", UpperArmLimit.getVoltage());
-      SmartDashboard.putNumber("Lower Limit Switch", LowerArmLimit.getVoltage());
-      SmartDashboard.putNumber("auton_timer", auton_timer.get());
-      SmartDashboard.putNumber("pvm", pvm);
-      SmartDashboard.putNumber("score_timer", score_timer.get());
-      SmartDashboard.putNumber("balance speed", (-1*Integer.signum(PitchInt)*0.15)/((auton_timer.get())*0.1+2));
-      SmartDashboard.putNumber("Area", area);
-      SmartDashboard.putNumber("fl", fl);
-      SmartDashboard.putNumber("BL encoder", bLeftPos);
-      SmartDashboard.putNumber("DisplacementX", Alex.getDisplacementX());
-      SmartDashboard.putNumber("DisplacementY", Alex.getDisplacementY());
-      SmartDashboard.putNumber("DisplacementZ", Alex.getDisplacementZ());
-      
   }
   
   /** This function is called once each time the robot enters Disabled mode. */
@@ -279,7 +273,6 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.schedule();
     }
-    BL.setSelectedSensorPosition(0);
   }
 
   /** This function is called periodically during autonomous. */
@@ -318,7 +311,34 @@ public class Robot extends TimedRobot {
           mecanum.driveCartesian(0, 0, 0);
         }
     break;
+    case Score_High_Cube:
+        ScoreHighCube();
+    break;
 
+    case Balance_Test:
+
+        if(fl ==0){
+          if(Target == 0){
+            mecanum.driveCartesian(-0.7, 0, 0);
+          }else if(Target == 1){
+            fl = 2;
+          }
+        }else if(fl == 2){
+          if(area > 0.7){
+            mecanum.driveCartesian(-0.7, 0, 0);
+          }else{
+            fl = 3;
+          }
+        }else if(fl == 3){
+          if(Pitch > 1.6 || Pitch < -1.6){
+            int PitchInt = (int)Pitch;
+            mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.15, 0, 0);
+          }else if(Pitch < 0.6 && Pitch > -0.6){
+            mecanum.driveCartesian(0, 0, 0);
+            LWS.set(true);
+          }
+        }
+    break;
   case Time_Balance_Test:
   if(fl ==0){
     if(Target == 0){
@@ -333,28 +353,83 @@ public class Robot extends TimedRobot {
       fl = 3;
     }
   }else if(fl == 3){
-    Timed_Balance();
+    if(Pitch > 1.6 || Pitch < -1.6){
+      int PitchInt = (int)Pitch;
+      mecanum.driveCartesian((-1*Integer.signum(PitchInt)*0.15)/((auton_timer.get())*0.1+2), 0, 0);
+    }else if(Pitch < 0.6 && Pitch > -0.6){
+      auton_timer.start();
+      mecanum.driveCartesian(0, 0, 0);
+      LWS.set(true);
+    }
   }
   break;
   case Middle_April_Extended:
     if(fl == 0){
-      fl = 1;
+      if(UpperArmLimit.getVoltage() < 0.1 && pvm == 0){
+        ArmSolenoid.set(false);
+        GrabberIn.set(true);
+        GrabberOut.set(false);
+        ArmMotor.set(1);
+      }else if(pvm == 0){
+        ArmMotor.set(0);
+        score_timer.start();
+        pvm = 1;
+      }
+      if(score_timer.get() < 1.5 && pvm == 1){
+        ArmSolenoid.set(true);
+      }else if(pvm == 1){
+        pvm = 2;
+      }
+      if(score_timer.get() < 4.5 && pvm == 2){
+        GrabberOut.set(true);
+        GrabberIn.set(false);
+      }else if(pvm == 2){
+        ArmSolenoid.set(false);
+        pvm = 3;
+      }
+      if(LowerArmLimit.getVoltage() < 0.1 && pvm == 3){
+        ArmMotor.set(-1);
+        GrabberIn.set(true);
+        GrabberOut.set(false);
+      }
+      else if(pvm == 3){
+        // GrabberIn.set(false);
+        // GrabberOut.set(true);
+        ArmMotor.set(0);
+        pvm = 4;
+        fl = 1;
+      }
     }
-    else if(fl == 1){
-      if(Target == 0){
-        mecanum.driveCartesian(-0.7, 0, 0);
-      }else if(Target == 1){
-        fl = 2;
-      }
-    }else if(fl == 2){
-      if(area > 0.65){
-        mecanum.driveCartesian(-0.7, 0, 0);
-      }else{
-        fl = 3;
-      }
-    }else if(fl == 3){
-      Simple_Balance();
-  }
+      else if(fl == 1 && pvm == 4){
+        if(Target == 0){
+          mecanum.driveCartesian(-0.7, 0, 0);
+        }else if(Target == 1){
+          fl = 2;
+        }
+      }else if(fl == 2){
+        if(area > 0.65){
+          mecanum.driveCartesian(-0.7, 0, 0);
+        }else{
+          fl = 3;
+        }
+      }else if(fl == 3){
+        LWS.set(true);
+        LW.set(ControlMode.Follower, BL.get()*2);
+        if(Pitch > 1.6 || Pitch < -1.6){
+          //LW.set(-1*Integer.signum(PitchInt)*0.16);
+          mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.15, 0, 0);
+          //LWS.set(false);
+        }else if(Pitch < 0.8 || Pitch > -0.8){
+          mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.09, 0, 0);
+          //LWS.set(true);
+          //LW.set(-1*Integer.signum(PitchInt)*0.1);
+        }else if(Pitch < 0.6 || Pitch > -0.6){
+          LWS.set(true);
+          LW.set(0);
+          mecanum.driveCartesian(0, 0, 0);
+        }
+      
+    }
   break;
   case Side_No_Score:
     auton_timer.start();
@@ -376,7 +451,40 @@ public class Robot extends TimedRobot {
   case Side_April:
     //int sc = 0;
     if(fl == 0){
-
+      if(UpperArmLimit.getVoltage() < 0.1 && pvm == 0){
+        ArmSolenoid.set(false);
+        GrabberIn.set(true);
+        GrabberOut.set(false);
+        ArmMotor.set(0.9);
+      }else if(pvm == 0){
+        ArmMotor.set(0);
+        score_timer.start();
+        pvm = 1;
+      }
+      if(score_timer.get() < 1.5 && pvm == 1){
+        ArmSolenoid.set(true);
+      }else if(pvm == 1){
+        pvm = 2;
+      }
+      if(score_timer.get() < 4 && pvm == 2){
+        GrabberOut.set(true);
+        GrabberIn.set(false);
+      }else if(pvm == 2){
+        ArmSolenoid.set(false);
+        pvm = 3;
+      }
+      if(LowerArmLimit.getVoltage() < 0.1 && pvm == 3){
+        ArmMotor.set(-0.9);
+        GrabberIn.set(true);
+        GrabberOut.set(false);
+      }
+      else if(pvm == 3){
+        // GrabberIn.set(false);
+        // GrabberOut.set(true);
+        ArmMotor.set(0);
+        pvm = 4;
+        fl = 1;
+      }
     }
     // else{
     //   //fl = 1;
@@ -399,23 +507,65 @@ public class Robot extends TimedRobot {
 
   break;
 
-  case Mid_Full_Test:
+  case Time_Side_April:
+    //int sc = 0;
     if(fl == 0){
-      
-    }
-  break;
-  
-  case Encoder_Back:
-    if(fl == 0){
-      if(BL.getSelectedSensorPosition() > -90*distEncode){
-        mecanum.driveCartesian(-0.3, 0, 0);
-      }else{
-        mecanum.driveCartesian(0, 0, 0);
-        LWS.set(true);
+      if(UpperArmLimit.getVoltage() < 0.1 && pvm == 0){
+        ArmSolenoid.set(false);
+        GrabberIn.set(true);
+        GrabberOut.set(false);
+        ArmMotor.set(0.9);
+      }else if(pvm == 0){
+        ArmMotor.set(0);
+        score_timer.start();
+        pvm = 1;
+      }
+      if(score_timer.get() < 1.5 && pvm == 1){
+        ArmSolenoid.set(true);
+      }else if(pvm == 1){
+        pvm = 2;
+      }
+      if(score_timer.get() < 4 && pvm == 2){
+        GrabberOut.set(true);
+        GrabberIn.set(false);
+      }else if(pvm == 2){
+        ArmSolenoid.set(false);
+        pvm = 3;
+      }
+      if(LowerArmLimit.getVoltage() < 0.1 && pvm == 3){
+        ArmMotor.set(-0.9);
+        GrabberIn.set(true);
+        GrabberOut.set(false);
+      }
+      else if(pvm == 3){
+        // GrabberIn.set(false);
+        // GrabberOut.set(true);
+        ArmMotor.set(0);
+        pvm = 4;
         fl = 1;
+        auton_timer.start();
       }
     }
+    // else{
+    //   //fl = 1;
+    // }
+    else if(fl == 1){
+     if(auton_timer.get() < 1){
+      mecanum.driveCartesian(-0.7, 0, 0);
+     }else{
+      fl = 2;
+     }
+    }else if(fl == 2){
+      mecanum.driveCartesian(0, 0, 0);
+    }
+
   break;
+
+  case Left_April:
+  break;
+  // case Dist_Balance_Test:
+    
+  // break;
   }
   }
 
@@ -430,52 +580,85 @@ public class Robot extends TimedRobot {
     }
     Alex.calibrate();
 
+    GrabberIn.set(true);
+    GrabberOut.set(false);
+
   }
 
   public void ScoreHighCube(){
-
+    if(UpperArmLimit.getVoltage() < 0.1 && pvm == 0){
+      ArmSolenoid.set(false);
+      GrabberIn.set(true);
+      GrabberOut.set(false);
+      ArmMotor.set(0.9);
+    }else if(pvm == 0){
+      ArmMotor.set(0);
+      score_timer.start();
+      pvm = 1;
+    }
+    if(score_timer.get() < 1.5 && pvm == 1){
+      ArmSolenoid.set(true);
+    }else if(pvm == 1){
+      pvm = 2;
+    }
+    if(score_timer.get() < 4.5 && pvm == 2){
+      GrabberOut.set(true);
+      GrabberIn.set(false);
+    }else if(pvm == 2){
+      ArmSolenoid.set(false);
+      pvm = 3;
+    }
+    if(LowerArmLimit.getVoltage() < 0.1 && pvm == 3){
+      ArmMotor.set(-0.9);
+      GrabberIn.set(true);
+      GrabberOut.set(false);
+    }
+    else if(pvm == 3){
+      // GrabberIn.set(false);
+      // GrabberOut.set(true);
+      ArmMotor.set(0);
+      pvm = 4;
+    }
+    // if(pvm == 4){
+    //   if(Target == 0){
+    //     mecanum.driveCartesian(-0.5, 0, 0);
+    //   }else if(Target == 1){
+    //     if(area > 0.8){
+    //       mecanum.driveCartesian(-0.5, 0, 0);
+    //     }
+    //     else{
+    //       mecanum.driveCartesian(0, 0, 0);
+    //       pvm = 5;
+    //     }
+    //   }else{
+    //     mecanum.driveCartesian(0, 0, 0);
+    //   }
+    // }
   }
 
-  public void Dist_Balance(){
-    if(Pitch > 1.6 || Pitch < -1.6){
-      mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.15, 0, 0);
-      Alex.resetDisplacement();
-    }else if(Pitch < 0.8 && Pitch > -0.8){
-      if(Alex.getDisplacementX() < 0.5 && Alex.getDisplacementX() > -0.5){
-        mecanum.driveCartesian(-0.1, 0, 0);
-      }else{
-        mecanum.driveCartesian(0, 0, 0);
-      }
-    }
+  public void ScoreMidCube(){
+
   }
-  public void Simple_Balance(){
-    LWS.set(true);
-    LW.set(ControlMode.Follower, BL.get()*2);
-    if(Pitch > 1.6 || Pitch < -1.6){
-      //LW.set(-1*Integer.signum(PitchInt)*0.16);
-      mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.15, 0, 0);
-      //LWS.set(false);
-    }else if(Pitch < 0.8 || Pitch > -0.8){
-      mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.09, 0, 0);
-      //LWS.set(true);
-      //LW.set(-1*Integer.signum(PitchInt)*0.1);
-    }else if(Pitch < 0.6 || Pitch > -0.6){
-      LWS.set(true);
-      LW.set(0);
-      mecanum.driveCartesian(0, 0, 0);
-    }
+  public void ScoreLowCube(){
+
   }
-  public void Timed_Balance(){
-    if(Pitch > 1.6 || Pitch < -1.6){
-      int PitchInt = (int)Pitch;
-      mecanum.driveCartesian((-1*Integer.signum(PitchInt)*0.15)/((auton_timer.get())*0.1+2), 0, 0);
-    }else if(Pitch < 0.6 && Pitch > -0.6){
-      auton_timer.start();
-      mecanum.driveCartesian(0, 0, 0);
-      LWS.set(true);
-    }
+  public void ScoreHighCone(){
+
+  }
+  public void ScoreMidCone(){
+
+  }
+  public void ScoreLowCone(){
+
+  }
+  public void PickUpCone(){
+
   }
   
+  public void PickUpCube(){
+    GrabberIn.set(true);
+    GrabberOut.set(false);
+  }
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
@@ -483,7 +666,28 @@ public class Robot extends TimedRobot {
     mecanum.driveCartesian(-1*Joy.getRawAxis(axisY), Joy.getRawAxis(axisX), Joy.getRawAxis(rotZ));
     
     //int PitchInt = (int)Pitch;
-
+    //grabber arms
+    if(Bitterness.getRawButton(b) || Joy.getRawButtonPressed(D)){
+      GrabberOut.set(true);
+      GrabberIn.set(false);
+    }else if(Bitterness.getRawButton(a) || Joy.getRawButtonReleased(D)){
+      GrabberIn.set(true);
+      GrabberOut.set(false);
+    }
+    //cone stick
+    if(Joy.getRawButtonReleased(trigger)){
+      StickIn.set(true);
+      StickOut.set(false);
+    }else if(Joy.getRawButtonPressed(trigger)){
+      StickIn.set(false);
+      StickOut.set(true);
+    }
+    //Arm Solenoid
+    if(Bitterness.getRawButton(LB)){
+      ArmSolenoid.set(false);
+    }else if(Bitterness.getRawButton(RB)){
+      ArmSolenoid.set(true);
+    }
     //old auto balace 
 
     // else if(Joy.getRawButton(i)){
@@ -529,7 +733,22 @@ public class Robot extends TimedRobot {
     //   }
     // }
 
-
+    //Arm Motor
+    else if(Bitterness.getRawAxis(axisY) <  -0.1){
+      if(UpperArmLimit.getVoltage() < 0.1){
+        ArmMotor.set(-1*Bitterness.getRawAxis(axisY));
+      }else{
+        ArmMotor.set(0);
+      }
+    }else if(Bitterness.getRawAxis(axisY) > 0.1){
+      if(LowerArmLimit.getVoltage() < 0.1){
+        ArmMotor.set(-1*Bitterness.getRawAxis(axisY));
+      }else{
+        ArmMotor.set(0);
+      }
+    }else{
+      ArmMotor.set(0);
+    }
     //Drop-down Wheels
     if(BL.get() < 0.5){
       if(Joy.getRawButton(Fire) || Bitterness.getRawButton(X)){
@@ -549,6 +768,21 @@ public class Robot extends TimedRobot {
       }
     }
 
+    // if(Joy.getRawButton(A)){
+    //   LW.stopMotor();
+    // }else if(Joy.getRawButton(B)){
+    //   LW.stopMotor();
+    // }
+
+
+    //limi switch override
+    // if(Bitterness.getRawButtonPressed(joydown)){
+    //   UpperArmLimitVar = 0;
+    //   LowerArmLimitVar = 0;
+    // }else if(Bitterness.getRawButtonReleased(joydown)){
+    //   UpperArmLimitVar = UpperArmLimit.getVoltage();
+    //   LowerArmLimitVar = LowerArmLimit.getVoltage();
+    // }
     // if(Joy.getRawButtonPressed(D)){
 
     //   if(Pitch > 1.6 || Pitch < -1.6){
@@ -580,4 +814,6 @@ public class Robot extends TimedRobot {
   /** This function is called periodically whilst in simulation. */
   @Override
   public void simulationPeriodic() {}
+
+  public void ooooo(){}
 }
