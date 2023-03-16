@@ -260,6 +260,8 @@ public class Robot extends TimedRobot {
       SmartDashboard.putNumber("DisplacementX", Alex.getDisplacementX());
       SmartDashboard.putNumber("DisplacementY", Alex.getDisplacementY());
       SmartDashboard.putNumber("DisplacementZ", Alex.getDisplacementZ());
+      SmartDashboard.putNumber("Target", Target);
+      SmartDashboard.putNumber("Arm Encoder", ArmMotor.getSelectedSensorPosition());
       
   }
   
@@ -280,6 +282,8 @@ public class Robot extends TimedRobot {
       m_autonomousCommand.schedule();
     }
     BL.setSelectedSensorPosition(0);
+    auton_timer.reset();
+    auton_timer.stop();
   }
 
   /** This function is called periodically during autonomous. */
@@ -291,7 +295,7 @@ public class Robot extends TimedRobot {
       case Middle:
         if(fl == 0){
           ScoreHighCube();
-        }else if(pvm == 4){
+        }else if(fl == 0){
           fl = 1;
         }
         // if(fl == 1){
@@ -379,25 +383,39 @@ public class Robot extends TimedRobot {
         // break;
       case Side_April:
         //int sc = 0;
-        if(fl == 0){
+        if(fl == 0 && auton_timer.get() < 2){
           ScoreHighCube();
-        }
-        else if(pvm == 4){
+        }else if(fl == 0){
           fl = 1;
         }
         else if(fl == 1){
           if(Target == 0){
+            if(LowerArmLimit.getVoltage() > 3){
+              ArmMotor.set(-0.7);
+            }else if(LowerArmLimit.getVoltage() < 3){
+              ArmMotor.set(0);
+            }
             mecanum.driveCartesian(-0.7, 0, 0);
           }else if(Target == 1){
             fl = 2;
           }
         }else if(fl == 2){
           if(area > 0.17){
+            if(LowerArmLimit.getVoltage() > 3){
+              ArmMotor.set(-0.7);
+            }else if(LowerArmLimit.getVoltage() < 3){
+              ArmMotor.set(0);
+            }
             mecanum.driveCartesian(-0.7, 0, 0);
           }else{
             fl = 3;
           }
         }else if(fl == 3){
+          if(LowerArmLimit.getVoltage() > 3){
+            ArmMotor.set(-0.7);
+          }else if(LowerArmLimit.getVoltage() < 3){
+            ArmMotor.set(0);
+          }
           mecanum.driveCartesian(0, 0, 0);
         }
 
@@ -431,28 +449,34 @@ public class Robot extends TimedRobot {
   }
 
   public void ScoreHighCube(){
-    if(pvm == 0 && area > 1){
-      mecanum.driveCartesian(-0.7, 0, 0);
-    }else{
-      mecanum.driveCartesian(0, 0, 0);
-      pvm = 1;
-    }
-    if(pvm == 1 && UpperArmLimit.getVoltage() > 3){
-      ArmMotor.set(0.5);
-    }else{
+    // if(pvm == 0 && area > 1){
+    //   mecanum.driveCartesian(-0.5, 0, 0);
+    // }else{
+    //   mecanum.driveCartesian(0, 0, 0);
+    //   pvm = 1;
+    // }
+    if(pvm == 0 && UpperArmLimit.getVoltage() > 3){
+      ArmMotor.set(0.7);
+    }else if(pvm == 0 && UpperArmLimit.getVoltage() < 3){
       ArmMotor.set(0);
       pvm = 2;
-    }if(pvm == 2 && area < 1){
-      mecanum.driveCartesian(0.7, 0, 0);
-    }else{
+    }if(pvm == 2 && area < 0.5 && Target == 1){
+      mecanum.driveCartesian(0.5, 0, 0);
+    }else if(pvm == 2 && area > 0.6){
+      mecanum.driveCartesian(0, 0, 0);
       pvm = 3;
       auton_timer.start();
     }
-    if(pvm == 3 && auton_timer.get() < 1){
-      LGrabber.set(0.3);
-      RGrabber.set(0.3);
-    }else{
-      pvm = 4;
+    if(pvm == 3){
+      if(auton_timer.get() > 1){
+        LGrabber.set(0.3);
+        RGrabber.set(0.3);
+      }
+      if(auton_timer.get() > 2){
+        LGrabber.set(0);
+        RGrabber.set(0);
+        pvm = 4;
+      }
     }
   }
   public void ScoreHighCone(){
@@ -631,6 +655,14 @@ public class Robot extends TimedRobot {
         LW.set(0);
         LWS.set(false);
       }
+    }
+
+    if(Joy.getRawButton(D)){
+      ScoreHighCube();
+    }
+    if(Joy.getRawButton(E)){
+      auton_timer.reset();
+      pvm = 0;
     }
 
     // if(Bitterness.getRawButton(LB)){
