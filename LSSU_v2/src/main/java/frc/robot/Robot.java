@@ -8,12 +8,8 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-//import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.kauailabs.navx.frc.AHRS;
-
-
 import edu.wpi.first.cameraserver.CameraServer;
-//import edu.wpi.first.hal.FRCNetComm;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -56,10 +52,10 @@ public class Robot extends TimedRobot {
     WPI_TalonFX FR = new WPI_TalonFX(1);
     WPI_TalonFX FL = new WPI_TalonFX(3);
     //Grabber Motors
-    WPI_TalonSRX LGrabber = new WPI_TalonSRX(0);
-    WPI_TalonSRX RGrabber = new WPI_TalonSRX(0);
+    WPI_TalonSRX LGrabber = new WPI_TalonSRX(7);
+    WPI_TalonSRX RGrabber = new WPI_TalonSRX(6);
     //arm motors
-    WPI_TalonFX ArmMotor = new WPI_TalonFX(0);
+    WPI_TalonFX ArmMotor = new WPI_TalonFX(10);
     //low wheels
     WPI_TalonFX LW = new WPI_TalonFX(11);
     //Joysicks
@@ -131,6 +127,8 @@ public class Robot extends TimedRobot {
     int button = 31;
     int scroll = 32;
     // bitterness button mapping
+    int LYAxis = 1;
+    int RYAxis = 5;
     int b = 2;
     int a = 1;
     int X = 3;
@@ -167,8 +165,8 @@ public class Robot extends TimedRobot {
     //public void mechs
     double pvm = 0;
     //Limit Switches
-    AnalogInput UpperArmLimit = new AnalogInput(0);
-    AnalogInput LowerArmLimit = new AnalogInput(1);
+    AnalogInput UpperArmLimit = new AnalogInput(1);
+    AnalogInput LowerArmLimit = new AnalogInput(0);
     
     
     //double UpperArmLimitVar;
@@ -178,7 +176,7 @@ public class Robot extends TimedRobot {
     //pheunamtics
     Compressor compressor = new Compressor(PneumaticsModuleType.REVPH);
     //low wheels
-    Solenoid LWS = new Solenoid(PneumaticsModuleType.CTREPCM, 6);
+    Solenoid LWS = new Solenoid(PneumaticsModuleType.CTREPCM, 0);
     
     /**
      * This function is run when the robot is first started up and should be used for any
@@ -200,6 +198,9 @@ public class Robot extends TimedRobot {
       BR.setInverted(true);
       FR.setInverted(true);
       
+      ArmMotor.setInverted(true);
+
+      RGrabber.setInverted(true);
       
       compressor.enableDigital();
       
@@ -248,7 +249,7 @@ public class Robot extends TimedRobot {
       SmartDashboard.putNumber("Pitch", Pitch);
       SmartDashboard.putNumber("SwayCounter", SwayCounter);
       SmartDashboard.putNumber("Alex Dispacement X", DistX);
-      SmartDashboard.putNumber("Upper LimitSwitch", UpperArmLimit.getVoltage());
+      SmartDashboard.putNumber("Upper Limit Switch", UpperArmLimit.getVoltage());
       SmartDashboard.putNumber("Lower Limit Switch", LowerArmLimit.getVoltage());
       SmartDashboard.putNumber("auton_timer", auton_timer.get());
       SmartDashboard.putNumber("pvm", pvm);
@@ -288,13 +289,39 @@ public class Robot extends TimedRobot {
 
     m_autoSelected = m_chooser.getSelected();
     switch(m_autoSelected){
-    case Middle_April:
-      if(fl == 0){
-        ScoreHighCube();
-      }else if(pvm == 3){
-        fl = 1;
-      }
-      if(fl == 1){
+      case Middle_April:
+        if(fl == 0){
+          ScoreHighCube();
+        }else if(pvm == 3){
+          fl = 1;
+        }
+        if(fl == 1){
+          if(Target == 0){
+            mecanum.driveCartesian(-0.7, 0, 0);
+          }else if(Target == 1){
+            fl = 2;
+          }
+        }else if(fl == 2){
+          if(area > 0.7){
+            mecanum.driveCartesian(-0.7, 0, 0);
+          }else{
+            fl = 3;
+          }
+        }else if(fl == 3){
+            if(Pitch > 1.6 || Pitch < -1.6){
+              int PitchInt = (int)Pitch;
+              mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.15, 0, 0);
+            }else if(Pitch < 0.5 || Pitch > -0.5){
+              mecanum.driveCartesian(0, 0, 0);
+              i ++;
+            }
+          }else if(i == 500){
+            mecanum.driveCartesian(0, 0, 0);
+          }
+      break;
+
+      case Time_Balance_Test:
+      if(fl ==0){
         if(Target == 0){
           mecanum.driveCartesian(-0.7, 0, 0);
         }else if(Target == 1){
@@ -307,116 +334,90 @@ public class Robot extends TimedRobot {
           fl = 3;
         }
       }else if(fl == 3){
-          if(Pitch > 1.6 || Pitch < -1.6){
-            int PitchInt = (int)Pitch;
-            mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.15, 0, 0);
-          }else if(Pitch < 0.5 || Pitch > -0.5){
-            mecanum.driveCartesian(0, 0, 0);
-            i ++;
+        Timed_Balance();
+      }
+      break;
+      case Middle_April_Extended:
+        if(fl == 0){
+          fl = 1;
+        }
+        else if(fl == 1){
+          if(Target == 0){
+            mecanum.driveCartesian(-0.7, 0, 0);
+          }else if(Target == 1){
+            fl = 2;
           }
-        }else if(i == 500){
+        }else if(fl == 2){
+          if(area > 0.65){
+            mecanum.driveCartesian(-0.7, 0, 0);
+          }else{
+            fl = 3;
+          }
+        }else if(fl == 3){
+          Simple_Balance();
+      }
+      break;
+      case Side_No_Score:
+        auton_timer.start();
+        if(fl == 0){
+          if(auton_timer.get() < 1){
+            mecanum.driveCartesian(-0.6, 0, 0);
+          }else{
+            fl = 1;
+          }
+        }else if(fl ==1){
+          if(Alex.getAngle() < 1000){
+            mecanum.driveCartesian(0, 0, 0.5);
+          }else{
+            mecanum.driveCartesian(0, 0, 0);
+            fl = 2;
+          }
+        }
+      break;
+      case Side_April:
+        //int sc = 0;
+        if(fl == 0){
+
+        }
+        // else{
+        //   //fl = 1;
+        // }
+        else if(fl == 1){
+          if(Target == 0){
+            mecanum.driveCartesian(-0.7, 0, 0);
+          }else if(Target == 1){
+            fl = 2;
+          }
+        }else if(fl == 2){
+          if(area > 0.17){
+            mecanum.driveCartesian(-0.7, 0, 0);
+          }else{
+            fl = 3;
+          }
+        }else if(fl == 3){
           mecanum.driveCartesian(0, 0, 0);
         }
-    break;
 
-  case Time_Balance_Test:
-  if(fl ==0){
-    if(Target == 0){
-      mecanum.driveCartesian(-0.7, 0, 0);
-    }else if(Target == 1){
-      fl = 2;
-    }
-  }else if(fl == 2){
-    if(area > 0.7){
-      mecanum.driveCartesian(-0.7, 0, 0);
-    }else{
-      fl = 3;
-    }
-  }else if(fl == 3){
-    Timed_Balance();
-  }
-  break;
-  case Middle_April_Extended:
-    if(fl == 0){
-      fl = 1;
-    }
-    else if(fl == 1){
-      if(Target == 0){
-        mecanum.driveCartesian(-0.7, 0, 0);
-      }else if(Target == 1){
-        fl = 2;
-      }
-    }else if(fl == 2){
-      if(area > 0.65){
-        mecanum.driveCartesian(-0.7, 0, 0);
-      }else{
-        fl = 3;
-      }
-    }else if(fl == 3){
-      Simple_Balance();
-  }
-  break;
-  case Side_No_Score:
-    auton_timer.start();
-    if(fl == 0){
-      if(auton_timer.get() < 1){
-        mecanum.driveCartesian(-0.6, 0, 0);
-      }else{
-        fl = 1;
-      }
-    }else if(fl ==1){
-      if(Alex.getAngle() < 1000){
-        mecanum.driveCartesian(0, 0, 0.5);
-      }else{
-        mecanum.driveCartesian(0, 0, 0);
-        fl = 2;
-      }
-    }
-  break;
-  case Side_April:
-    //int sc = 0;
-    if(fl == 0){
+      break;
 
-    }
-    // else{
-    //   //fl = 1;
-    // }
-    else if(fl == 1){
-      if(Target == 0){
-        mecanum.driveCartesian(-0.7, 0, 0);
-      }else if(Target == 1){
-        fl = 2;
-      }
-    }else if(fl == 2){
-      if(area > 0.17){
-        mecanum.driveCartesian(-0.7, 0, 0);
-      }else{
-        fl = 3;
-      }
-    }else if(fl == 3){
-      mecanum.driveCartesian(0, 0, 0);
-    }
-
-  break;
-
-  case Mid_Full_Test:
-    if(fl == 0){
+      case Mid_Full_Test:
+        if(fl == 0){
+          
+        }
+      break;
       
+      case Encoder_Back:
+        if(fl == 0){
+          if(BL.getSelectedSensorPosition() > -90*distEncode){
+            mecanum.driveCartesian(-0.3, 0, 0);
+          }else{
+            mecanum.driveCartesian(0, 0, 0);
+            LWS.set(true);
+            fl = 1;
+          }
+        }
+      break;
     }
-  break;
-  
-  case Encoder_Back:
-    if(fl == 0){
-      if(BL.getSelectedSensorPosition() > -90*distEncode){
-        mecanum.driveCartesian(-0.3, 0, 0);
-      }else{
-        mecanum.driveCartesian(0, 0, 0);
-        LWS.set(true);
-        fl = 1;
-      }
-    }
-  break;
-  }
   }
 
   @Override
@@ -433,7 +434,15 @@ public class Robot extends TimedRobot {
   }
 
   public void ScoreHighCube(){
-
+    if(pvm == 0 && UpperArmLimit.getVoltage() > 3){
+      ArmMotor.set(0.5);
+    }else{
+      ArmMotor.set(0);
+      pvm = 1;
+    }if(pvm == 1){
+      LGrabber.set(-0.3);
+      RGrabber.set(0.3);
+    }
   }
 
   public void Dist_Balance(){
@@ -483,6 +492,35 @@ public class Robot extends TimedRobot {
     mecanum.driveCartesian(-1*Joy.getRawAxis(axisY), Joy.getRawAxis(axisX), Joy.getRawAxis(rotZ));
     
     //int PitchInt = (int)Pitch;
+
+    //Arm Motor
+    if(Bitterness.getRawAxis(LYAxis) <  -0.1){
+      if(UpperArmLimit.getVoltage() > 3){
+        ArmMotor.set(-0.75*Bitterness.getRawAxis(axisY));
+      }else{
+        ArmMotor.set(0);
+      }
+    }else if(Bitterness.getRawAxis(LYAxis) > 0.1){
+      if(LowerArmLimit.getVoltage() > 3){
+        ArmMotor.set(-0.75*Bitterness.getRawAxis(axisY));
+      }else{
+        ArmMotor.set(0);
+      }
+    }else{
+      ArmMotor.set(0);
+    }
+
+    //Grabber Motors
+    if(Bitterness.getRawAxis(RYAxis) < -0.1){
+      LGrabber.set(-1*Bitterness.getRawAxis(RYAxis));
+      RGrabber.set(-1*Bitterness.getRawAxis(RYAxis));
+    }else if(Bitterness.getRawAxis(RYAxis) > 0.1){
+      LGrabber.set(-1*Bitterness.getRawAxis(RYAxis));
+      RGrabber.set(-1*Bitterness.getRawAxis(RYAxis));
+    }else{
+      RGrabber.set(0);
+      LGrabber.set(0);
+    }
 
     //old auto balace 
 
@@ -548,6 +586,16 @@ public class Robot extends TimedRobot {
         LWS.set(false);
       }
     }
+
+    // if(Bitterness.getRawButton(LB)){
+    //   LGrabber.set(1);
+    // }
+    // else if (Bitterness.getRawButton(RB)){
+    //   RGrabber.set(1);
+    // }else{
+    //   LGrabber.set(0);
+    //   RGrabber.set(0);
+    // }
 
     // if(Joy.getRawButtonPressed(D)){
 
