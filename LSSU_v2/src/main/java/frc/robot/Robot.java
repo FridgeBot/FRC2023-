@@ -69,7 +69,7 @@ public class Robot extends TimedRobot {
 
     private String m_autoSelected;
 
-    private static final String Middle_April = "Middle_April";
+    private static final String Middle = "Middle";
     private static final String Side_April = "Side_April";
     private static final String Balance_Test = "Balance_Test";
     private static final String Time_Balance_Test = "Time_Balance_Test";
@@ -78,7 +78,6 @@ public class Robot extends TimedRobot {
     private static final String Time_Side_April = "Time_Side_April";
     private static final String Side_No_Score = "Side_No_Score";
     private static final String Encoder_Back = "Encoder_Back";
-    private static final String Mid_Full_Test = "Mid_Full_Test";
 
     private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -231,8 +230,7 @@ public class Robot extends TimedRobot {
       //LowerArmLimitVar = LowerArmLimit.getVoltage();
 
       SmartDashboard.putData("Auto choices", m_chooser);
-      m_chooser.addOption("Middle_April", Middle_April);
-      m_chooser.addOption("Nothing", Middle_April);
+      m_chooser.addOption("Middle_April", Middle);
       m_chooser.addOption("Side_April", Side_April);
       m_chooser.addOption("Balance_Test", Balance_Test);
       m_chooser.addOption("Time_Balance_Test", Time_Balance_Test);
@@ -241,7 +239,6 @@ public class Robot extends TimedRobot {
       m_chooser.addOption("Time_Side_April", Time_Side_April);
       m_chooser.addOption("Side_No_Score", Side_No_Score);
       m_chooser.addOption("Encoder_Back", Encoder_Back);
-      m_chooser.addOption("Mid_Full_Test", Mid_Full_Test);
 
       bLeftPos = BL.getSelectedSensorPosition(TalonFXFeedbackDevice.IntegratedSensor.value);
       
@@ -289,10 +286,10 @@ public class Robot extends TimedRobot {
 
     m_autoSelected = m_chooser.getSelected();
     switch(m_autoSelected){
-      case Middle_April:
+      case Middle:
         if(fl == 0){
           ScoreHighCube();
-        }else if(pvm == 3){
+        }else if(pvm == 2){
           fl = 1;
         }
         if(fl == 1){
@@ -308,16 +305,8 @@ public class Robot extends TimedRobot {
             fl = 3;
           }
         }else if(fl == 3){
-            if(Pitch > 1.6 || Pitch < -1.6){
-              int PitchInt = (int)Pitch;
-              mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.15, 0, 0);
-            }else if(Pitch < 0.5 || Pitch > -0.5){
-              mecanum.driveCartesian(0, 0, 0);
-              i ++;
-            }
-          }else if(i == 500){
-            mecanum.driveCartesian(0, 0, 0);
-          }
+          Dist_Balance();
+        }
       break;
 
       case Time_Balance_Test:
@@ -357,27 +346,27 @@ public class Robot extends TimedRobot {
           Simple_Balance();
       }
       break;
-      case Side_No_Score:
-        auton_timer.start();
-        if(fl == 0){
-          if(auton_timer.get() < 1){
-            mecanum.driveCartesian(-0.6, 0, 0);
-          }else{
-            fl = 1;
-          }
-        }else if(fl ==1){
-          if(Alex.getAngle() < 1000){
-            mecanum.driveCartesian(0, 0, 0.5);
-          }else{
-            mecanum.driveCartesian(0, 0, 0);
-            fl = 2;
-          }
-        }
-      break;
+        // case Side_No_Score:
+        //   auton_timer.start();
+        //   if(fl == 0){
+        //     if(auton_timer.get() < 1){
+        //       mecanum.driveCartesian(-0.6, 0, 0);
+        //     }else{
+        //       fl = 1;
+        //     }
+        //   }else if(fl ==1){
+        //     if(Alex.getAngle() < 1000){
+        //       mecanum.driveCartesian(0, 0, 0.5);
+        //     }else{
+        //       mecanum.driveCartesian(0, 0, 0);
+        //       fl = 2;
+        //     }
+        //   }
+        // break;
       case Side_April:
         //int sc = 0;
         if(fl == 0){
-
+          
         }
         // else{
         //   //fl = 1;
@@ -398,12 +387,6 @@ public class Robot extends TimedRobot {
           mecanum.driveCartesian(0, 0, 0);
         }
 
-      break;
-
-      case Mid_Full_Test:
-        if(fl == 0){
-          
-        }
       break;
       
       case Encoder_Back:
@@ -434,13 +417,38 @@ public class Robot extends TimedRobot {
   }
 
   public void ScoreHighCube(){
-    if(pvm == 0 && UpperArmLimit.getVoltage() > 3){
+    if(pvm == 0 && area > 1){
+      mecanum.driveCartesian(-0.7, 0, 0);
+    }else{
+      mecanum.driveCartesian(0, 0, 0);
+      pvm = 1;
+    }
+    if(pvm == 1 && UpperArmLimit.getVoltage() > 3){
       ArmMotor.set(0.5);
     }else{
       ArmMotor.set(0);
+      //auton_timer.start();
+      pvm = 2;
+    }if(pvm == 2){
+      LGrabber.set(0.3);
+      RGrabber.set(0.3);
+    }
+  }
+  public void ScoreHighCone(){
+    if(pvm == 0 && area > 1){
+      mecanum.driveCartesian(-0.7, 0, 0);
+    }else{
+      mecanum.driveCartesian(0, 0, 0);
       pvm = 1;
-    }if(pvm == 1){
-      LGrabber.set(-0.3);
+    }
+    if(pvm == 1 && UpperArmLimit.getVoltage() > 3){
+      ArmMotor.set(0.5);
+    }else{
+      ArmMotor.set(0);
+      //auton_timer.start();
+      pvm = 2;
+    }if(pvm == 2){
+      LGrabber.set(0.3);
       RGrabber.set(0.3);
     }
   }
