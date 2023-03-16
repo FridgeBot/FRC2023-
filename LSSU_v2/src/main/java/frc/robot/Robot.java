@@ -152,6 +152,8 @@ public class Robot extends TimedRobot {
     double PitchHolder = 2;
     int SwayCounter = 0;
     double Balance_Dist = 0;
+
+    int PitchStep = 0;
     
     double Target;
     double area;
@@ -289,24 +291,36 @@ public class Robot extends TimedRobot {
       case Middle:
         if(fl == 0){
           ScoreHighCube();
-        }else if(pvm == 2){
+        }else if(pvm == 4){
           fl = 1;
         }
+        // if(fl == 1){
+        //   if(Target == 0){
+        //     mecanum.driveCartesian(-0.7, 0, 0);
+        //   }else if(Target == 1){
+        //     fl = 2;
+        //   }
+        // }else if(fl == 2){
+        //   if(area > 0.7){
+        //     mecanum.driveCartesian(-0.7, 0, 0);
+        //   }else{
+        //     fl = 3;
+        //   }
+        // }
         if(fl == 1){
-          if(Target == 0){
+          if(Pitch > -4){
             mecanum.driveCartesian(-0.7, 0, 0);
-          }else if(Target == 1){
+          }else if(Pitch > 2){
+            mecanum.driveCartesian(0, 0, 0);
+          }else{
             fl = 2;
           }
-        }else if(fl == 2){
-          if(area > 0.7){
-            mecanum.driveCartesian(-0.7, 0, 0);
-          }else{
-            fl = 3;
-          }
-        }else if(fl == 3){
-          Dist_Balance();
+        
         }
+
+        // else if(fl == 3){
+        //   Dist_Balance();
+        // }
       break;
 
       case Time_Balance_Test:
@@ -366,11 +380,11 @@ public class Robot extends TimedRobot {
       case Side_April:
         //int sc = 0;
         if(fl == 0){
-          
+          ScoreHighCube();
         }
-        // else{
-        //   //fl = 1;
-        // }
+        else if(pvm == 4){
+          fl = 1;
+        }
         else if(fl == 1){
           if(Target == 0){
             mecanum.driveCartesian(-0.7, 0, 0);
@@ -427,11 +441,18 @@ public class Robot extends TimedRobot {
       ArmMotor.set(0.5);
     }else{
       ArmMotor.set(0);
-      //auton_timer.start();
       pvm = 2;
-    }if(pvm == 2){
+    }if(pvm == 2 && area < 1){
+      mecanum.driveCartesian(0.7, 0, 0);
+    }else{
+      pvm = 3;
+      auton_timer.start();
+    }
+    if(pvm == 3 && auton_timer.get() < 1){
       LGrabber.set(0.3);
       RGrabber.set(0.3);
+    }else{
+      pvm = 4;
     }
   }
   public void ScoreHighCone(){
@@ -445,11 +466,18 @@ public class Robot extends TimedRobot {
       ArmMotor.set(0.5);
     }else{
       ArmMotor.set(0);
-      //auton_timer.start();
       pvm = 2;
-    }if(pvm == 2){
+    }if(pvm == 2 && area < 1){
+      mecanum.driveCartesian(0.7, 0, 0);
+    }else{
+      pvm = 3;
+      auton_timer.start();
+    }
+    if(pvm == 3 && auton_timer.get() < 1){
       LGrabber.set(0.3);
       RGrabber.set(0.3);
+    }else{
+      pvm = 4;
     }
   }
 
@@ -490,6 +518,16 @@ public class Robot extends TimedRobot {
       auton_timer.start();
       mecanum.driveCartesian(0, 0, 0);
       LWS.set(true);
+    }
+  }
+  public void Pitch_Balance(){
+    if((Pitch > 1.6 || Pitch < -1.6) && PitchStep == 0){
+      mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.2, 0, 0);
+    }else{
+      PitchStep = 1;
+    }
+    if(PitchStep == 1 && (Pitch < 1.4 && Pitch > -1.4)){
+      mecanum.driveCartesian(0, 0, 0);
     }
   }
   
