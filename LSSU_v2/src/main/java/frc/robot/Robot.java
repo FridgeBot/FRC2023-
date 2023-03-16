@@ -282,6 +282,8 @@ public class Robot extends TimedRobot {
       m_autonomousCommand.schedule();
     }
     BL.setSelectedSensorPosition(0);
+    auton_timer.reset();
+    auton_timer.stop();
   }
 
   /** This function is called periodically during autonomous. */
@@ -404,7 +406,7 @@ public class Robot extends TimedRobot {
             }else if(LowerArmLimit.getVoltage() < 3){
               ArmMotor.set(0);
             }
-            mecanum.driveCartesian(-0.4, 0, 0);
+            mecanum.driveCartesian(-0.7, 0, 0);
           }else{
             fl = 3;
           }
