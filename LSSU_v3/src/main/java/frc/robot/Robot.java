@@ -85,6 +85,7 @@ public class Robot extends TimedRobot {
 
     Timer auton_timer = new Timer();
     Timer score_timer = new Timer();
+    Timer balance_timer = new Timer();
 
     //joystick dead zone double values
     //double joyX;
@@ -293,6 +294,8 @@ public class Robot extends TimedRobot {
     BL.setSelectedSensorPosition(0);
     auton_timer.reset();
     auton_timer.stop();
+    balance_timer.reset();
+    balance_timer.stop();
   }
 
   /** This function is called periodically during autonomous. */
@@ -306,13 +309,13 @@ public class Robot extends TimedRobot {
           ScoreHighCone();
         }else if(fl == 0){
           fl = 1;
-        }if(fl == 1 && BL.getSelectedSensorPosition() > -10000){
-          mecanum.driveCartesian(-0.4, 0, 0);
+        }if(fl == 1 && BL.getSelectedSensorPosition() > -30000){
+          mecanum.driveCartesian(-0.45, 0, 0);
         }else if(fl == 1){
           fl = 2;
         }
         if(fl == 2 && LowerArmLimit.getVoltage() > 3){
-          ArmMotor.set(-0.6);
+          ArmMotor.set(-0.85);
         }else if(fl == 2 && LowerArmLimit.getVoltage() < 3){
           ArmMotor.set(0);
           fl = 3;
@@ -331,19 +334,26 @@ public class Robot extends TimedRobot {
         //   }
         // }
         if(fl == 3){
-          if(BL.get() < 0.5){
-            LWS.set(true);
-            LW.set(BR.get()*2);
-          }
-          if(Pitch < 6){
-            mecanum.driveCartesian(-0.6, 0, 0);
-          }else if(Pitch > 3){
+          // if(BL.get() < 0.5){
+          //   LWS.set(true);
+          //   LW.set(BR.get()*2);
+          // }
+          if(Pitch < 5){
+            mecanum.driveCartesian(-0.5, 0, 0);
+          }else if(Pitch > 7){
             mecanum.driveCartesian(0, 0, 0);
-          }else{
+            balance_timer.start();
             fl = 4;
           }
-        }if(fl == 4){
-          Pitch_Balance();
+        }if(fl == 4 && balance_timer.get() > 1){
+          if(Pitch < 5){
+            mecanum.driveCartesian(0.8, 0, 0);
+          }else{
+            fl = 5;
+          }
+        }else
+        if(fl == 5){
+          daniBalance();
         }
 
         // else if(fl == 3){
@@ -511,8 +521,12 @@ public class Robot extends TimedRobot {
       pvm = 1;
     }
     if(pvm == 1 && UpperArmLimit.getVoltage() > 3){
-      ArmMotor.set(0.7);
-      mecanum.driveCartesian(-0.15, 0, 0);
+      ArmMotor.set(0.85);
+      if(Pitch < -2){
+        mecanum.driveCartesian(0, 0, 0);
+      }else{
+        mecanum.driveCartesian(-0.15, 0, 0);
+      }
     }else if(pvm == 1 && UpperArmLimit.getVoltage() < 3){
       ArmMotor.set(0);
       pvm = 2;
@@ -524,7 +538,7 @@ public class Robot extends TimedRobot {
       auton_timer.start();
     }
     if(pvm == 3 && ArmMotor.getSelectedSensorPosition() > 600000){
-      ArmMotor.set(-0.5);
+      ArmMotor.set(-0.6);
     }else if(pvm == 3){
       ArmMotor.set(0);
       pvm = 4;
@@ -581,13 +595,16 @@ public class Robot extends TimedRobot {
     }
   }
   public void Pitch_Balance(){
-
-    if((Pitch > 1.6 || Pitch < -1.6) && PitchStep == 0){
-      mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.2, 0, 0);
+    if(BL.get() < 0.5){
+      LWS.set(true);
+      LW.set(BR.get()*2);
+    }
+    if((Pitch < 14 && Pitch > -14) && PitchStep == 0){
+      mecanum.driveCartesian(Integer.signum(PitchInt)*0.499, 0, 0);
     }else{
       PitchStep = 1;
     }
-    if(PitchStep == 1 && (Pitch < 1.4 && Pitch > -1.4)){
+    if(PitchStep == 1 && (Pitch > 14 && Pitch < -14)){
       mecanum.driveCartesian(0, 0, 0);
     }
   }
@@ -595,7 +612,7 @@ public class Robot extends TimedRobot {
   public void daniBalance(){
     Pitch = Alex.getPitch();
 
-    double outPut = Pitch*0.015;
+    double outPut = Pitch*0.012;
     if(BL.get() < 0.5){
         LWS.set(true);
         LW.set(BR.get()*2);
