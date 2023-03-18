@@ -387,7 +387,7 @@ public class Robot extends TimedRobot {
       case Side_April:
         //int sc = 0;
         if(fl == 0 && auton_timer.get() < 2){
-          ScoreHighCube();
+          ScoreHighCone();
         }else if(fl == 0){
           fl = 1;
         }
@@ -398,7 +398,7 @@ public class Robot extends TimedRobot {
             }else if(LowerArmLimit.getVoltage() < 3){
               ArmMotor.set(0);
             }
-            mecanum.driveCartesian(-0.7, 0, 0);
+            mecanum.driveCartesian(-0.5, 0, 0);
           }else if(Target == 1){
             fl = 2;
           }
@@ -409,7 +409,7 @@ public class Robot extends TimedRobot {
             }else if(LowerArmLimit.getVoltage() < 3){
               ArmMotor.set(0);
             }
-            mecanum.driveCartesian(-0.7, 0, 0);
+            mecanum.driveCartesian(-0.5, 0, 0);
           }else{
             fl = 3;
           }
@@ -460,10 +460,11 @@ public class Robot extends TimedRobot {
     // }
     if(pvm == 0 && UpperArmLimit.getVoltage() > 3){
       ArmMotor.set(0.7);
+      mecanum.driveCartesian(-0.12, 0, 0);
     }else if(pvm == 0 && UpperArmLimit.getVoltage() < 3){
       ArmMotor.set(0);
       pvm = 2;
-    }if(pvm == 2 && area < 0.5 && Target == 1){
+    }if(pvm == 2 && area < 0.3 && Target == 1){
       mecanum.driveCartesian(0.5, 0, 0);
     }else if(pvm == 2 && area > 0.6){
       mecanum.driveCartesian(0, 0, 0);
@@ -483,28 +484,39 @@ public class Robot extends TimedRobot {
     }
   }
   public void ScoreHighCone(){
-    if(pvm == 0 && area > 1){
-      mecanum.driveCartesian(-0.7, 0, 0);
-    }else{
-      mecanum.driveCartesian(0, 0, 0);
+    if(pvm == 0){
+      BL.setSelectedSensorPosition(0);
       pvm = 1;
     }
     if(pvm == 1 && UpperArmLimit.getVoltage() > 3){
-      ArmMotor.set(0.5);
-    }else{
+      ArmMotor.set(0.7);
+      mecanum.driveCartesian(-0.12, 0, 0);
+    }else if(pvm == 1 && UpperArmLimit.getVoltage() < 3){
       ArmMotor.set(0);
       pvm = 2;
-    }if(pvm == 2 && area < 1){
-      mecanum.driveCartesian(0.5, 0, 0);
-    }else{
+    }if(pvm == 2 && BL.getSelectedSensorPosition() < -1000){
+      mecanum.driveCartesian(0.4, 0, 0);
+    }else if(pvm == 2){
+      mecanum.driveCartesian(0, 0, 0);
       pvm = 3;
       auton_timer.start();
     }
-    if(pvm == 3 && auton_timer.get() < 1){
-      LGrabber.set(0.3);
-      RGrabber.set(0.3);
-    }else{
+    if(pvm == 3 && ArmMotor.getSelectedSensorPosition() > 600000){
+      ArmMotor.set(-0.5);
+    }else if(pvm == 3){
+      ArmMotor.set(0);
       pvm = 4;
+    }
+    if(pvm == 4){
+      if(auton_timer.get() > 1){
+        LGrabber.set(0.3);
+        RGrabber.set(0.3);
+      }
+      if(auton_timer.get() > 2){
+        LGrabber.set(0);
+        RGrabber.set(0);
+        pvm = 5;
+      }
     }
   }
 
@@ -604,52 +616,6 @@ public class Robot extends TimedRobot {
       LGrabber.set(0);
     }
 
-    //old auto balace 
-
-    // else if(Joy.getRawButton(i)){
-    //   LWS.set(true);
-    //   if((Pitch > 1.6 || Pitch < -1.6) && SwayCounter < 4){
-    //     LW.set(-1*Integer.signum(PitchInt)*0.16);
-    //     mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.14, 0, 0);
-    //     if((Pitch > 0 && PitchHolder < 0) || (Pitch < 0 && PitchHolder > 0)){
-    //       PitchHolder = Pitch;
-    //       SwayCounter++;
-    //       Alex.resetDisplacement();
-    //     }
-
-    //   } else if(SwayCounter >= 4){
-    //     if(PitchHolder > 0 && Alex.getDisplacementX() > -0.15){
-    //       mecanum.driveCartesian(-0.25, 0, 0);
-    //     }else if(PitchHolder < 0 && Alex.getDisplacementX() < 0.15){
-    //       mecanum.driveCartesian(0.25, 0, 0);
-    //     // }else if(Pitch < 0.6 || Pitch > -0.6){
-    //     } else {
-    //       LW.set(0);
-    //       mecanum.driveCartesian(0, 0, 0);
-    //    }
-    //   }
-    // }
-    //auto balance
-
-    // if(Joy.getRawButton(E)){
-    //   LWS.set(true);
-    //   LW.set(ControlMode.Follower, BL.get()*2);
-    //   if(Pitch > 1.6 || Pitch < -1.6){
-    //     //LW.set(-1*Integer.signum(PitchInt)*0.16);
-    //     mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.15, 0, 0);
-    //     LWS.set(false);
-    //   }else if(Pitch < 0.8 || Pitch > -0.8){
-    //     mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.09, 0, 0);
-    //     //LWS.set(true);
-    //     //LW.set(-1*Integer.signum(PitchInt)*0.1);
-    //   }else if(Pitch < 0.6 || Pitch > -0.6){
-    //     LWS.set(true);
-    //     LW.set(0);
-    //     mecanum.driveCartesian(0, 0, 0);
-    //   }
-    // }
-
-
     //Drop-down Wheels
     if(BL.get() < 0.5){
       if(Joy.getRawButton(Fire) || Bitterness.getRawButton(X)){
@@ -679,6 +645,7 @@ public class Robot extends TimedRobot {
     }
     if(Joy.getRawButton(E)){
       auton_timer.reset();
+      BL.setSelectedSensorPosition(0);
       pvm = 0;
     }
 
@@ -690,19 +657,6 @@ public class Robot extends TimedRobot {
     // }else{
     //   LGrabber.set(0);
     //   RGrabber.set(0);
-    // }
-
-    // if(Joy.getRawButtonPressed(D)){
-
-    //   if(Pitch > 1.6 || Pitch < -1.6){
-    //     mecanum.driveCartesian((-1*Integer.signum(PitchInt)*0.15)/((auton_timer.get())*0.1+2), 0, 0);
-    //     auton_timer.start();
-    //   }else if(Pitch < 0.6 && Pitch > -0.6){
-    //     mecanum.driveCartesian(0, 0, 0);
-    //     LWS.set(true);
-    //   }
-    // }else if(Joy.getRawButtonReleased(D)){
-    //   auton_timer.reset();
     // }
   }
 
