@@ -5,6 +5,7 @@
 package frc.robot;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
@@ -22,6 +23,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -197,6 +199,11 @@ public class Robot extends TimedRobot {
       FR.setSafetyEnabled(false);
       BL.setSafetyEnabled(false);
       BR.setSafetyEnabled(false);
+      LGrabber.setNeutralMode(NeutralMode.Brake);
+      RGrabber.setNeutralMode(NeutralMode.Brake);
+
+
+      
       
       BR.setInverted(true);
       FR.setInverted(true);
@@ -296,9 +303,19 @@ public class Robot extends TimedRobot {
     switch(m_autoSelected){
       case Middle:
         if(fl == 0 && auton_timer.get() < 2){
-          ScoreHighCube();
+          ScoreHighCone();
         }else if(fl == 0){
           fl = 1;
+        }if(fl == 1 && BL.getSelectedSensorPosition() > -10000){
+          mecanum.driveCartesian(-0.4, 0, 0);
+        }else if(fl == 1){
+          fl = 2;
+        }
+        if(fl == 2 && LowerArmLimit.getVoltage() > 3){
+          ArmMotor.set(-0.6);
+        }else if(fl == 2 && LowerArmLimit.getVoltage() < 3){
+          ArmMotor.set(0);
+          fl = 3;
         }
         // if(fl == 1){
         //   if(Target == 0){
@@ -313,15 +330,19 @@ public class Robot extends TimedRobot {
         //     fl = 3;
         //   }
         // }
-        if(fl == 1){
-          if(Pitch > -4){
-            mecanum.driveCartesian(-0.7, 0, 0);
-          }else if(Pitch > 2){
+        if(fl == 3){
+          if(BL.get() < 0.5){
+            LWS.set(true);
+            LW.set(BR.get()*2);
+          }
+          if(Pitch < 6){
+            mecanum.driveCartesian(-0.6, 0, 0);
+          }else if(Pitch > 3){
             mecanum.driveCartesian(0, 0, 0);
           }else{
-            fl = 2;
+            fl = 4;
           }
-        }if(fl == 2){
+        }if(fl == 4){
           Pitch_Balance();
         }
 
@@ -393,7 +414,7 @@ public class Robot extends TimedRobot {
         }
         else if(fl == 1){
           if(Target == 0){
-            if(LowerArmLimit.getVoltage() > 3){
+            if(LowerArmLimit.getVoltage() > 3 && auton_timer.get() > 4){
               ArmMotor.set(-0.7);
             }else if(LowerArmLimit.getVoltage() < 3){
               ArmMotor.set(0);
@@ -404,7 +425,7 @@ public class Robot extends TimedRobot {
           }
         }else if(fl == 2){
           if(area > 0.17){
-            if(LowerArmLimit.getVoltage() > 3){
+            if(LowerArmLimit.getVoltage() > 3 && auton_timer.get() > 4){
               ArmMotor.set(-0.7);
             }else if(LowerArmLimit.getVoltage() < 3){
               ArmMotor.set(0);
@@ -423,6 +444,7 @@ public class Robot extends TimedRobot {
         }
 
       break;
+
       
       case Encoder_Back:
         if(fl == 0){
@@ -490,12 +512,12 @@ public class Robot extends TimedRobot {
     }
     if(pvm == 1 && UpperArmLimit.getVoltage() > 3){
       ArmMotor.set(0.7);
-      mecanum.driveCartesian(-0.12, 0, 0);
+      mecanum.driveCartesian(-0.15, 0, 0);
     }else if(pvm == 1 && UpperArmLimit.getVoltage() < 3){
       ArmMotor.set(0);
       pvm = 2;
-    }if(pvm == 2 && BL.getSelectedSensorPosition() < -1000){
-      mecanum.driveCartesian(0.4, 0, 0);
+    }if(pvm == 2 && BL.getSelectedSensorPosition() < -3000){
+      mecanum.driveCartesian(0.3, 0, 0);
     }else if(pvm == 2){
       mecanum.driveCartesian(0, 0, 0);
       pvm = 3;
@@ -511,8 +533,7 @@ public class Robot extends TimedRobot {
       if(auton_timer.get() > 1){
         LGrabber.set(0.3);
         RGrabber.set(0.3);
-      }
-      if(auton_timer.get() > 2){
+      }else if(auton_timer.get() > 2){
         LGrabber.set(0);
         RGrabber.set(0);
         pvm = 5;
@@ -560,6 +581,7 @@ public class Robot extends TimedRobot {
     }
   }
   public void Pitch_Balance(){
+
     if((Pitch > 1.6 || Pitch < -1.6) && PitchStep == 0){
       mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.2, 0, 0);
     }else{
@@ -568,6 +590,20 @@ public class Robot extends TimedRobot {
     if(PitchStep == 1 && (Pitch < 1.4 && Pitch > -1.4)){
       mecanum.driveCartesian(0, 0, 0);
     }
+  }
+
+  public void daniBalance(){
+    Pitch = Alex.getPitch();
+
+    double outPut = Pitch*0.015;
+    if(BL.get() < 0.5){
+        LWS.set(true);
+        LW.set(BR.get()*2);
+      }
+    mecanum.driveCartesian(outPut, 0, 0);
+
+
+
   }
   
   /** This function is called periodically during operator control. */
@@ -637,6 +673,10 @@ public class Robot extends TimedRobot {
     }
     if(Bitterness.getRawButton(Start)){
       ArmMotor.setSelectedSensorPosition(0);
+    }
+
+    if(Bitterness.getRawButton(RB)){
+      daniBalance();
     }
     
 
