@@ -295,7 +295,7 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_chooser.getSelected();
     switch(m_autoSelected){
       case Middle:
-        if(fl == 0){
+        if(fl == 0 && auton_timer.get() < 2){
           ScoreHighCube();
         }else if(fl == 0){
           fl = 1;
@@ -321,7 +321,8 @@ public class Robot extends TimedRobot {
           }else{
             fl = 2;
           }
-        
+        }if(fl == 2){
+          Pitch_Balance();
         }
 
         // else if(fl == 3){
