@@ -160,11 +160,14 @@ public class Robot extends TimedRobot {
     int PitchStep = 0;
     
     double Target;
+    double TX;
     double area;
 
     int PitchInt = (int)Pitch;
 
     double bLeftPos;
+
+    int pipes;
     
     
     //public void mechs
@@ -236,6 +239,7 @@ public class Robot extends TimedRobot {
       Pitch = Alex.getPitch();
       DistX = Alex.getDisplacementX();
       Target = tv.getDouble(0.0);
+      TX = tx.getDouble(0.0);
       area = ta.getDouble(0.0);
       
           
@@ -287,6 +291,7 @@ public class Robot extends TimedRobot {
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
   @Override
   public void autonomousInit() {
+    pipes = 0;
     //m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
     // schedule the autonomous command (example)
@@ -305,7 +310,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
     m_autoSelected = m_chooser.getSelected();
     switch(m_autoSelected){
       case Middle_Simple:
@@ -353,9 +358,9 @@ public class Robot extends TimedRobot {
           mecanum.driveCartesian(0, 0, 0);
           fl = 2;
         }
-        if(fl == 2 && LowerArmLimit.getVoltage() > 3){
+        if(fl == 2 && LowerArmLimit.getVoltage() < 3){
           ArmMotor.set(-0.85);
-        }else if(fl == 2 && LowerArmLimit.getVoltage() < 3){
+        }else if(fl == 2 && LowerArmLimit.getVoltage() > 3){
           ArmMotor.set(0);
           fl = 3;
         }
@@ -484,9 +489,9 @@ public class Robot extends TimedRobot {
             fl = 3;
           }
         }else if(fl == 3){
-          if(LowerArmLimit.getVoltage() > 3){
+          if(LowerArmLimit.getVoltage() < 3){
             ArmMotor.set(-0.7);
-          }else if(LowerArmLimit.getVoltage() < 3){
+          }else if(LowerArmLimit.getVoltage() > 3){
             ArmMotor.set(0);
           }
           mecanum.driveCartesian(0, 0, 0);
@@ -519,6 +524,7 @@ public class Robot extends TimedRobot {
       m_autonomousCommand.cancel();
     }
     Alex.calibrate();
+    pipes = 1;
 
   }
 
@@ -667,6 +673,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
     //mecanum drive
     mecanum.driveCartesian(-1*Joy.getRawAxis(axisY), Joy.getRawAxis(axisX), Joy.getRawAxis(rotZ));
     
@@ -680,7 +687,7 @@ public class Robot extends TimedRobot {
         ArmMotor.set(0);
       }
     }else if(Bitterness.getRawAxis(LYAxis) > 0.1){
-      if(LowerArmLimit.getVoltage() > 3){
+      if(LowerArmLimit.getVoltage() < 3){
         ArmMotor.set(-0.75*Bitterness.getRawAxis(axisY));
       }else{
         ArmMotor.set(0);
@@ -705,11 +712,15 @@ public class Robot extends TimedRobot {
     }else if(Bitterness.getRawAxis(RYAxis) > 0.1){
       LGrabber.set(-1*Bitterness.getRawAxis(RYAxis));
       RGrabber.set(-1*Bitterness.getRawAxis(RYAxis));
+    }else if(Bitterness.getRawButton(RB)){
+      LGrabber.set(-0.3);
+      RGrabber.set(-0.3);
     }else{
       RGrabber.set(0);
       LGrabber.set(0);
     }
 
+    
     //Drop-down Wheels
     if(BL.get() < 0.5){
       if(Joy.getRawButton(Fire) || Bitterness.getRawButton(X)){
@@ -718,47 +729,53 @@ public class Robot extends TimedRobot {
         LW.set(BR.get()*2);
       }
       // else if(Joy.getRawButton(A)){
-      //   LWS.set(true);
-      //   LW.set(0.5);
-      // }else if(Joy.getRawButton(B)){
-      //   LW.set(-0.5);
-      //   LWS.set(true);
-      // }
-      else{
-        LW.set(0);
-        LWS.set(false);
-      }
-    }
-    if(Bitterness.getRawButton(Start)){
-      ArmMotor.setSelectedSensorPosition(0);
-    }
-
-    if(Bitterness.getRawButton(RB)){
-      daniBalance();
-    }
-    
-
-    if(Joy.getRawButton(D)){
-      ScoreHighCube();
-    }
-    if(Joy.getRawButton(E)){
-      auton_timer.reset();
-      BL.setSelectedSensorPosition(0);
-      pvm = 0;
-    }
-
-    // if(Bitterness.getRawButton(LB)){
-    //   LGrabber.set(1);
-    // }
-    // else if (Bitterness.getRawButton(RB)){
+        //   LWS.set(true);
+        //   LW.set(0.5);
+        // }else if(Joy.getRawButton(B)){
+          //   LW.set(-0.5);
+          //   LWS.set(true);
+          // }
+          else{
+            LW.set(0);
+            LWS.set(false);
+          }
+        }
+        if(Bitterness.getRawButton(Start)){
+          ArmMotor.setSelectedSensorPosition(0);
+        }
+        
+        // if(Joy.getRawButton(D)){
+          //   ScoreHighCube();
+          // }
+          
+          if(Joy.getRawButton(E)){
+            auton_timer.reset();
+            BL.setSelectedSensorPosition(0);
+            pvm = 0;
+          }
+          
+          // if(Bitterness.getRawButton(LB)){
+            //   LGrabber.set(1);
+            // }
+            // else if (Bitterness.getRawButton(RB)){
     //   RGrabber.set(1);
     // }else{
-    //   LGrabber.set(0);
-    //   RGrabber.set(0);
-    // }
-  }
+      //   LGrabber.set(0);
+      //   RGrabber.set(0);
+      // }
+      //Auto_lining for Cone
+      if(Bitterness.getRawButton(LB)){
+        if(TX > 3 || TX < -3){
+          mecanum.driveCartesian(0, 0, TX*0.1);
+        }else{
+          mecanum.driveCartesian(0, 0, 0);
+        }
+      }else{
+        Target = 0;
+      }
+    }
 
-  @Override
+    @Override
   public void testInit() {
     // Cancels all running commands at the start of test mode.
     CommandScheduler.getInstance().cancelAll();
