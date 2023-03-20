@@ -5,6 +5,7 @@
 package frc.robot;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.TalonFXFeedbackDevice;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
@@ -22,6 +23,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -78,11 +80,13 @@ public class Robot extends TimedRobot {
     private static final String Time_Side_April = "Time_Side_April";
     private static final String Side_No_Score = "Side_No_Score";
     private static final String Encoder_Back = "Encoder_Back";
+    private static final String Middle_Simple = "Middle_Simple";
 
     private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
     Timer auton_timer = new Timer();
     Timer score_timer = new Timer();
+    Timer balance_timer = new Timer();
 
     //joystick dead zone double values
     //double joyX;
@@ -197,6 +201,11 @@ public class Robot extends TimedRobot {
       FR.setSafetyEnabled(false);
       BL.setSafetyEnabled(false);
       BR.setSafetyEnabled(false);
+      LGrabber.setNeutralMode(NeutralMode.Brake);
+      RGrabber.setNeutralMode(NeutralMode.Brake);
+
+
+      
       
       BR.setInverted(true);
       FR.setInverted(true);
@@ -243,6 +252,7 @@ public class Robot extends TimedRobot {
       m_chooser.addOption("Time_Side_April", Time_Side_April);
       m_chooser.addOption("Side_No_Score", Side_No_Score);
       m_chooser.addOption("Encoder_Back", Encoder_Back);
+      m_chooser.addOption("Middle_Simple", Middle_Simple);
 
       bLeftPos = BL.getSelectedSensorPosition(TalonFXFeedbackDevice.IntegratedSensor.value);
       
@@ -286,6 +296,10 @@ public class Robot extends TimedRobot {
     BL.setSelectedSensorPosition(0);
     auton_timer.reset();
     auton_timer.stop();
+    balance_timer.reset();
+    balance_timer.stop();
+    fl = 0;
+    pvm = 0;
   }
 
   /** This function is called periodically during autonomous. */
@@ -294,11 +308,56 @@ public class Robot extends TimedRobot {
 
     m_autoSelected = m_chooser.getSelected();
     switch(m_autoSelected){
+      case Middle_Simple:
+        if(fl == 0 && auton_timer.get() < 2){
+          auton_timer.start();
+          LGrabber.set(1);
+          RGrabber.set(1);
+        }else if(fl == 0){
+          LGrabber.set(0);
+          RGrabber.set(0);
+          auton_timer.stop();
+          fl = 3;
+        }
+        if(fl == 3){
+          // if(BL.get() < 0.5){
+          //   LWS.set(true);
+          //   LW.set(BR.get()*2);
+          // }
+          if(Pitch < 5){
+            mecanum.driveCartesian(-0.5, 0, 0);
+          }else if(Pitch > 7){
+            mecanum.driveCartesian(0, 0, 0);
+            balance_timer.start();
+            fl = 4;
+          }
+        }if(fl == 4 && balance_timer.get() > 0.4){
+          if(Pitch < 5){
+            mecanum.driveCartesian(0.8, 0, 0);
+          }else{
+            fl = 5;
+          }
+        }else
+        if(fl == 5){
+          daniBalance();
+        }
+      break;
       case Middle:
         if(fl == 0 && auton_timer.get() < 2){
-          ScoreHighCube();
+          ScoreHighCone();
         }else if(fl == 0){
           fl = 1;
+        }if(fl == 1 && BL.getSelectedSensorPosition() > -30000){
+          mecanum.driveCartesian(-0.45, 0, 0);
+        }else if(fl == 1){
+          mecanum.driveCartesian(0, 0, 0);
+          fl = 2;
+        }
+        if(fl == 2 && LowerArmLimit.getVoltage() > 3){
+          ArmMotor.set(-0.85);
+        }else if(fl == 2 && LowerArmLimit.getVoltage() < 3){
+          ArmMotor.set(0);
+          fl = 3;
         }
         // if(fl == 1){
         //   if(Target == 0){
@@ -313,16 +372,27 @@ public class Robot extends TimedRobot {
         //     fl = 3;
         //   }
         // }
-        if(fl == 1){
-          if(Pitch > -4){
-            mecanum.driveCartesian(-0.7, 0, 0);
-          }else if(Pitch > 2){
+        if(fl == 3){
+          // if(BL.get() < 0.5){
+          //   LWS.set(true);
+          //   LW.set(BR.get()*2);
+          // }
+          if(Pitch < 5){
+            mecanum.driveCartesian(-0.5, 0, 0);
+          }else if(Pitch > 7){
             mecanum.driveCartesian(0, 0, 0);
-          }else{
-            fl = 2;
+            balance_timer.start();
+            fl = 4;
           }
-        }if(fl == 2){
-          Pitch_Balance();
+        }if(fl == 4 && balance_timer.get() > 0.4){
+          if(Pitch < 5){
+            mecanum.driveCartesian(0.8, 0, 0);
+          }else{
+            fl = 5;
+          }
+        }else
+        if(fl == 5){
+          daniBalance();
         }
 
         // else if(fl == 3){
@@ -393,7 +463,7 @@ public class Robot extends TimedRobot {
         }
         else if(fl == 1){
           if(Target == 0){
-            if(LowerArmLimit.getVoltage() > 3){
+            if(LowerArmLimit.getVoltage() > 3 && auton_timer.get() > 4){
               ArmMotor.set(-0.7);
             }else if(LowerArmLimit.getVoltage() < 3){
               ArmMotor.set(0);
@@ -404,7 +474,7 @@ public class Robot extends TimedRobot {
           }
         }else if(fl == 2){
           if(area > 0.17){
-            if(LowerArmLimit.getVoltage() > 3){
+            if(LowerArmLimit.getVoltage() > 3 && auton_timer.get() > 4){
               ArmMotor.set(-0.7);
             }else if(LowerArmLimit.getVoltage() < 3){
               ArmMotor.set(0);
@@ -423,6 +493,7 @@ public class Robot extends TimedRobot {
         }
 
       break;
+
       
       case Encoder_Back:
         if(fl == 0){
@@ -489,30 +560,35 @@ public class Robot extends TimedRobot {
       pvm = 1;
     }
     if(pvm == 1 && UpperArmLimit.getVoltage() > 3){
-      ArmMotor.set(0.7);
-      mecanum.driveCartesian(-0.12, 0, 0);
+      ArmMotor.set(0.85);
+      if(Pitch < -2){
+        mecanum.driveCartesian(0, 0, 0);
+      }else{
+        mecanum.driveCartesian(-0.15, 0, 0);
+      }
     }else if(pvm == 1 && UpperArmLimit.getVoltage() < 3){
+      // if(ArmMotor.getSelectedSensorPosition() > 600000){
+      //   ArmMotor.set(-0.6);
+      // }else if(pvm == 3){
+      //   ArmMotor.set(0);
+      //   pvm = 4;
+      // }
       ArmMotor.set(0);
       pvm = 2;
-    }if(pvm == 2 && BL.getSelectedSensorPosition() < -1000){
-      mecanum.driveCartesian(0.4, 0, 0);
-    }else if(pvm == 2){
+    }
+    if(pvm == 2 && BL.getSelectedSensorPosition() < -3000){
+      mecanum.driveCartesian(0.3, 0, 0);
+    }
+    else if(pvm == 2){
       mecanum.driveCartesian(0, 0, 0);
       pvm = 3;
       auton_timer.start();
-    }
-    if(pvm == 3 && ArmMotor.getSelectedSensorPosition() > 600000){
-      ArmMotor.set(-0.5);
-    }else if(pvm == 3){
-      ArmMotor.set(0);
-      pvm = 4;
     }
     if(pvm == 4){
       if(auton_timer.get() > 1){
         LGrabber.set(0.3);
         RGrabber.set(0.3);
-      }
-      if(auton_timer.get() > 2){
+      }else if(auton_timer.get() > 2){
         LGrabber.set(0);
         RGrabber.set(0);
         pvm = 5;
@@ -560,14 +636,32 @@ public class Robot extends TimedRobot {
     }
   }
   public void Pitch_Balance(){
-    if((Pitch > 1.6 || Pitch < -1.6) && PitchStep == 0){
-      mecanum.driveCartesian(-1*Integer.signum(PitchInt)*0.2, 0, 0);
+    if(BL.get() < 0.5){
+      LWS.set(true);
+      LW.set(BR.get()*2);
+    }
+    if((Pitch < 14 && Pitch > -14) && PitchStep == 0){
+      mecanum.driveCartesian(Integer.signum(PitchInt)*0.499, 0, 0);
     }else{
       PitchStep = 1;
     }
-    if(PitchStep == 1 && (Pitch < 1.4 && Pitch > -1.4)){
+    if(PitchStep == 1 && (Pitch > 14 && Pitch < -14)){
       mecanum.driveCartesian(0, 0, 0);
     }
+  }
+
+  public void daniBalance(){
+    Pitch = Alex.getPitch();
+
+    double outPut = Pitch*0.012;
+    if(BL.get() < 0.5){
+        LWS.set(true);
+        LW.set(BR.get()*2);
+      }
+    mecanum.driveCartesian(outPut, 0, 0);
+
+
+
   }
   
   /** This function is called periodically during operator control. */
@@ -637,6 +731,10 @@ public class Robot extends TimedRobot {
     }
     if(Bitterness.getRawButton(Start)){
       ArmMotor.setSelectedSensorPosition(0);
+    }
+
+    if(Bitterness.getRawButton(RB)){
+      daniBalance();
     }
     
 
