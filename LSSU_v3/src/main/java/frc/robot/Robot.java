@@ -155,19 +155,20 @@ public class Robot extends TimedRobot {
     double PitchHolder = 2;
     int SwayCounter = 0;
     double Balance_Dist = 0;
-
+    
     int PitchStep = 0;
     
     double Target;
     double TX;
     double area;
-
+    
     int PitchInt = (int)Pitch;
-
+    
     double bLeftPos;
-
+    
     int pipes;
     
+    double txRange = 3.7;
     
     //public void mechs
     double pvm = 0;
@@ -277,6 +278,7 @@ public class Robot extends TimedRobot {
       SmartDashboard.putNumber("DisplacementZ", Alex.getDisplacementZ());
       SmartDashboard.putNumber("Target", Target);
       SmartDashboard.putNumber("Arm Encoder", ArmMotor.getSelectedSensorPosition());
+      SmartDashboard.putNumber("txRange", txRange);
       
   }
   
@@ -764,15 +766,24 @@ public class Robot extends TimedRobot {
       // }
       //Auto_lining for Cone
       if(Bitterness.getRawButton(LB)){
-        if(TX > 3 || TX < -3){
-          mecanum.driveCartesian(0, 0, TX*0.1);
+        if(TX > txRange || TX < -txRange){
+          mecanum.driveCartesian(0, 0, TX*0.02);
         }else{
           mecanum.driveCartesian(0, 0, 0);
         }
       }else{
         Target = 0;
       }
+
+      if(Bitterness.getPOV() == 90){
+        txRange = txRange+0.1;
+      }else if(Bitterness.getPOV() == 180){
+        txRange = txRange-0.1;
+      }else{
+        txRange = txRange+0;
+      }
     }
+
 
     @Override
   public void testInit() {
