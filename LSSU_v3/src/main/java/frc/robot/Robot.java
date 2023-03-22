@@ -47,6 +47,7 @@ public class Robot extends TimedRobot {
     NetworkTableEntry ta = table.getEntry("ta");
     NetworkTableEntry tv = table.getEntry("tv");
     NetworkTableEntry tid = table.getEntry("tid");
+    NetworkTableInstance getpipe = table.getInstance();
     //drive motors
     WPI_TalonFX BR = new WPI_TalonFX(9);
     WPI_TalonFX BL = new WPI_TalonFX(2);
@@ -159,6 +160,7 @@ public class Robot extends TimedRobot {
     int PitchStep = 0;
     
     double Target;
+    double pipeID;
     double TX;
     double area;
     
@@ -185,6 +187,7 @@ public class Robot extends TimedRobot {
     Compressor compressor = new Compressor(PneumaticsModuleType.REVPH);
     //low wheels
     Solenoid LWS = new Solenoid(PneumaticsModuleType.CTREPCM, 0);
+    Solenoid grabUp = new Solenoid(PneumaticsModuleType.CTREPCM, 1);
     
     /**
      * This function is run when the robot is first started up and should be used for any
@@ -206,18 +209,17 @@ public class Robot extends TimedRobot {
       BR.setSafetyEnabled(false);
       LGrabber.setNeutralMode(NeutralMode.Brake);
       RGrabber.setNeutralMode(NeutralMode.Brake);
-
-
       
       
       BR.setInverted(true);
       FR.setInverted(true);
       
       ArmMotor.setInverted(true);
-
+      
       RGrabber.setInverted(true);
       
       compressor.enableDigital();
+      
       
     }
     
@@ -236,13 +238,16 @@ public class Robot extends TimedRobot {
       // block in order for anything in the Command-based framework to work.
       CommandScheduler.getInstance().run();
       
+      
       Pitch = Alex.getPitch();
       DistX = Alex.getDisplacementX();
       Target = tv.getDouble(0.0);
       TX = tx.getDouble(0.0);
       area = ta.getDouble(0.0);
       
-          
+
+      
+      
       //UpperArmLimitVar = UpperArmLimit.getVoltage();
       //LowerArmLimitVar = LowerArmLimit.getVoltage();
 
@@ -260,6 +265,7 @@ public class Robot extends TimedRobot {
 
       bLeftPos = BL.getSelectedSensorPosition(TalonFXFeedbackDevice.IntegratedSensor.value);
       
+      SmartDashboard.putNumber("pipes", pipes);
       SmartDashboard.putBoolean("Solenoid LWS", LWS.get());
       SmartDashboard.putNumber("Pitch", Pitch);
       SmartDashboard.putNumber("SwayCounter", SwayCounter);
@@ -280,25 +286,32 @@ public class Robot extends TimedRobot {
       SmartDashboard.putNumber("Arm Encoder", ArmMotor.getSelectedSensorPosition());
       SmartDashboard.putNumber("txRange", txRange);
       
-  }
-  
-  /** This function is called once each time the robot enters Disabled mode. */
-  @Override
-  public void disabledInit() {}
-
-  @Override
-  public void disabledPeriodic() {}
-
-  /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
-  @Override
-  public void autonomousInit() {
-    pipes = 0;
-    //m_autonomousCommand = m_robotContainer.getAutonomousCommand();
-
-    // schedule the autonomous command (example)
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.schedule();
     }
+    
+    /** This function is called once each time the robot enters Disabled mode. */
+    @Override
+    public void disabledInit() {}
+    
+    @Override
+    public void disabledPeriodic() {}
+    
+    /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
+    @Override
+    public void autonomousInit() {
+      
+      //m_autonomousCommand = m_robotContainer.getAutonomousCommand();
+      
+      // schedule the autonomous command (example)
+      if (m_autonomousCommand != null) {
+        m_autonomousCommand.schedule();
+      }
+      
+
+
+      // pipes = 0;
+      // NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(pipes);
+      //pipeID = 0;
+      
     BL.setSelectedSensorPosition(0);
     auton_timer.reset();
     auton_timer.stop();
@@ -311,7 +324,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
+    // NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
     m_autoSelected = m_chooser.getSelected();
     switch(m_autoSelected){
       case Middle_Simple:
@@ -524,8 +537,12 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
+    
+    
     Alex.calibrate();
-    pipes = 1;
+    // pipes = 1;
+    // NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
+    //NetworkTableInstance.getDefault().getTable("limelight").getEntry("getpipe").getDouble(1);
 
   }
 
@@ -674,22 +691,23 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
     //mecanum drive
     mecanum.driveCartesian(-1*Joy.getRawAxis(axisY), Joy.getRawAxis(axisX), Joy.getRawAxis(rotZ));
+    //getpipe = getpipe.getDouble(pipes);
+    //pipeID = 1;
     
     //int PitchInt = (int)Pitch;
 
     //Arm Motor
     if(Bitterness.getRawAxis(LYAxis) <  -0.1){
       if(UpperArmLimit.getVoltage() > 3){
-        ArmMotor.set(-0.75*Bitterness.getRawAxis(axisY));
+        ArmMotor.set(-0.85*Bitterness.getRawAxis(axisY));
       }else{
         ArmMotor.set(0);
       }
     }else if(Bitterness.getRawAxis(LYAxis) > 0.1){
       if(LowerArmLimit.getVoltage() < 3){
-        ArmMotor.set(-0.75*Bitterness.getRawAxis(axisY));
+        ArmMotor.set(-0.85*Bitterness.getRawAxis(axisY));
       }else{
         ArmMotor.set(0);
       }
@@ -714,11 +732,18 @@ public class Robot extends TimedRobot {
       LGrabber.set(-1*Bitterness.getRawAxis(RYAxis));
       RGrabber.set(-1*Bitterness.getRawAxis(RYAxis));
     }else if(Bitterness.getRawButton(RB)){
-      LGrabber.set(-0.3);
-      RGrabber.set(-0.3);
+      LGrabber.set(0.3);
+      RGrabber.set(0.3);
     }else{
       RGrabber.set(0);
       LGrabber.set(0);
+    }
+
+    //Grabber Solenoid
+    if(Bitterness.getPOV() == 0){
+      grabUp.set(true);
+    }else if(Bitterness.getPOV() == 180){
+      grabUp.set(false);
     }
 
     
@@ -766,8 +791,8 @@ public class Robot extends TimedRobot {
       // }
       //Auto_lining for Cone
       if(Bitterness.getRawButton(LB)){
-        if(TX > txRange || TX < -txRange){
-          mecanum.driveCartesian(0, 0, TX*0.02);
+        if(TX > 2 || TX < -2){
+          mecanum.driveCartesian(0, 0, TX*0.025);
         }else{
           mecanum.driveCartesian(0, 0, 0);
         }
@@ -775,13 +800,13 @@ public class Robot extends TimedRobot {
         Target = 0;
       }
 
-      if(Bitterness.getPOV() == 90){
-        txRange = txRange+0.1;
-      }else if(Bitterness.getPOV() == 180){
-        txRange = txRange-0.1;
-      }else{
-        txRange = txRange+0;
-      }
+      // if(Bitterness.getPOV() == 90){
+      //   txRange = txRange+0.1;
+      // }else if(Bitterness.getPOV() == 180){
+      //   txRange = txRange-0.1;
+      // }else{
+      //   txRange = txRange+0;
+      // }
     }
 
 
