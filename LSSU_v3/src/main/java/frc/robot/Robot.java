@@ -81,6 +81,7 @@ public class Robot extends TimedRobot {
     private static final String Side_No_Score = "Side_No_Score";
     private static final String Encoder_Back = "Encoder_Back";
     private static final String Middle_Simple = "Middle_Simple";
+    private static final String Middle_Score = "Middle_Score";
 
     private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
@@ -252,16 +253,17 @@ public class Robot extends TimedRobot {
       //LowerArmLimitVar = LowerArmLimit.getVoltage();
 
       SmartDashboard.putData("Auto choices", m_chooser);
-      m_chooser.addOption("Middle_April", Middle);
+      //m_chooser.addOption("Middle_April", Middle);
       m_chooser.addOption("Side_April", Side_April);
-      m_chooser.addOption("Balance_Test", Balance_Test);
-      m_chooser.addOption("Time_Balance_Test", Time_Balance_Test);
-      m_chooser.addOption("Score_Hight_Cube", Score_High_Cube);
-      m_chooser.addOption("Middle_April_Extended", Middle_April_Extended);
-      m_chooser.addOption("Time_Side_April", Time_Side_April);
-      m_chooser.addOption("Side_No_Score", Side_No_Score);
-      m_chooser.addOption("Encoder_Back", Encoder_Back);
+      //m_chooser.addOption("Balance_Test", Balance_Test);
+      //m_chooser.addOption("Time_Balance_Test", Time_Balance_Test);
+      //m_chooser.addOption("Score_Hight_Cube", Score_High_Cube);
+      //m_chooser.addOption("Middle_April_Extended", Middle_April_Extended);
+      //m_chooser.addOption("Time_Side_April", Time_Side_April);
+      //m_chooser.addOption("Side_No_Score", Side_No_Score);
+      //m_chooser.addOption("Encoder_Back", Encoder_Back);
       m_chooser.addOption("Middle_Simple", Middle_Simple);
+      m_chooser.addOption("Middle_Score", Middle_Score);
 
       bLeftPos = BL.getSelectedSensorPosition(TalonFXFeedbackDevice.IntegratedSensor.value);
       
@@ -308,11 +310,12 @@ public class Robot extends TimedRobot {
       
 
 
-      // pipes = 0;
+      pipes = 0;
       // NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipeline").setNumber(pipes);
       //pipeID = 0;
       
     BL.setSelectedSensorPosition(0);
+    ArmMotor.setSelectedSensorPosition(0);
     auton_timer.reset();
     auton_timer.stop();
     balance_timer.reset();
@@ -324,7 +327,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    // NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
+    //NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
     m_autoSelected = m_chooser.getSelected();
     switch(m_autoSelected){
       case Middle_Simple:
@@ -358,7 +361,7 @@ public class Robot extends TimedRobot {
           }
         }else
         if(fl == 5){
-          daniBalance();
+          goodCodingPracticesBalance();
         }
       break;
       case Middle:
@@ -411,12 +414,16 @@ public class Robot extends TimedRobot {
           }
         }else
         if(fl == 5){
-          daniBalance();
+          goodCodingPracticesBalance();
         }
 
         // else if(fl == 3){
         //   Dist_Balance();
         // }
+      break;
+
+      case Middle_Score:
+        ScoreHighCone();
       break;
 
       case Time_Balance_Test:
@@ -540,8 +547,8 @@ public class Robot extends TimedRobot {
     
     
     Alex.calibrate();
-    // pipes = 1;
-    // NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
+    pipes = 1;
+    //NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
     //NetworkTableInstance.getDefault().getTable("limelight").getEntry("getpipe").getDouble(1);
 
   }
@@ -591,12 +598,6 @@ public class Robot extends TimedRobot {
         mecanum.driveCartesian(-0.15, 0, 0);
       }
     }else if(pvm == 1 && UpperArmLimit.getVoltage() < 3){
-      // if(ArmMotor.getSelectedSensorPosition() > 600000){
-      //   ArmMotor.set(-0.6);
-      // }else if(pvm == 3){
-      //   ArmMotor.set(0);
-      //   pvm = 4;
-      // }
       ArmMotor.set(0);
       pvm = 2;
     }
@@ -608,8 +609,14 @@ public class Robot extends TimedRobot {
       pvm = 3;
       auton_timer.start();
     }
+    if(pvm == 3 && ArmMotor.getSelectedSensorPosition() > 610000){
+      ArmMotor.set(-0.6);
+    }else if(pvm == 3){
+      ArmMotor.set(0);
+      pvm = 4;
+    }
     if(pvm == 4){
-      if(auton_timer.get() > 1){
+      if(auton_timer.get() > 1 && auton_timer.get() < 2){
         LGrabber.set(0.3);
         RGrabber.set(0.3);
       }else if(auton_timer.get() > 2){
@@ -617,6 +624,22 @@ public class Robot extends TimedRobot {
         RGrabber.set(0);
         pvm = 5;
       }
+    }
+    if(pvm == 5 && LowerArmLimit.getVoltage() < 3){
+      if(auton_timer.get() < 3){
+        mecanum.driveCartesian(-0.3, 0, 0);
+        if(Pitch < -2){
+          mecanum.driveCartesian(0, 0, 0);
+        }else{
+          mecanum.driveCartesian(-0.3, 0, 0);
+        }
+      }else if(auton_timer.get() > 3){
+        ArmMotor.set(-0.7);
+      }
+    }else if(pvm == 5 && LowerArmLimit.getVoltage() > 3){
+      mecanum.driveCartesian(0, 0, 0);
+      ArmMotor.set(0);
+      pvm = 6;
     }
   }
 
@@ -674,7 +697,7 @@ public class Robot extends TimedRobot {
     }
   }
 
-  public void daniBalance(){
+  public void goodCodingPracticesBalance(){
     Pitch = Alex.getPitch();
 
     double outPut = Pitch*0.012;
@@ -691,6 +714,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    //NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
     //mecanum drive
     mecanum.driveCartesian(-1*Joy.getRawAxis(axisY), Joy.getRawAxis(axisX), Joy.getRawAxis(rotZ));
     //getpipe = getpipe.getDouble(pipes);
@@ -749,7 +773,7 @@ public class Robot extends TimedRobot {
     
     //Drop-down Wheels
     if(BL.get() < 0.5){
-      if(Joy.getRawButton(Fire) || Bitterness.getRawButton(X)){
+      if(Joy.getRawButton(E) || Bitterness.getRawButton(X)){
         LWS.set(true);
         //LW.set(ControlMode.Follower, BR.get()*2);
         LW.set(BR.get()*2);
@@ -774,11 +798,11 @@ public class Robot extends TimedRobot {
           //   ScoreHighCube();
           // }
           
-          if(Joy.getRawButton(E)){
-            auton_timer.reset();
-            BL.setSelectedSensorPosition(0);
-            pvm = 0;
-          }
+          // if(Joy.getRawButton(E)){
+          //   auton_timer.reset();
+          //   BL.setSelectedSensorPosition(0);
+          //   pvm = 0;
+          // }
           
           // if(Bitterness.getRawButton(LB)){
             //   LGrabber.set(1);
