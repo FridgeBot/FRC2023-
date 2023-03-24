@@ -80,7 +80,7 @@ public class Robot extends TimedRobot {
     private static final String Time_Side_April = "Time_Side_April";
     private static final String Side_No_Score = "Side_No_Score";
     private static final String Encoder_Back = "Encoder_Back";
-    private static final String Middle_Simple = "Middle_Simple";
+    private static final String Middle_Balance = "Middle_Balance";
     private static final String Middle_Score = "Middle_Score";
 
     private final SendableChooser<String> m_chooser = new SendableChooser<>();
@@ -262,7 +262,7 @@ public class Robot extends TimedRobot {
       //m_chooser.addOption("Time_Side_April", Time_Side_April);
       //m_chooser.addOption("Side_No_Score", Side_No_Score);
       //m_chooser.addOption("Encoder_Back", Encoder_Back);
-      m_chooser.addOption("Middle_Simple", Middle_Simple);
+      m_chooser.addOption("Middle_Balance", Middle_Balance);
       m_chooser.addOption("Middle_Score", Middle_Score);
 
       bLeftPos = BL.getSelectedSensorPosition(TalonFXFeedbackDevice.IntegratedSensor.value);
@@ -330,7 +330,7 @@ public class Robot extends TimedRobot {
     //NetworkTableInstance.getDefault().getTable("limelight").getEntry("pipelines").setNumber(pipes);
     m_autoSelected = m_chooser.getSelected();
     switch(m_autoSelected){
-      case Middle_Simple:
+      case Middle_Balance:
         if(fl == 0 && auton_timer.get() < 2){
           auton_timer.start();
           LGrabber.set(1);
@@ -359,8 +359,16 @@ public class Robot extends TimedRobot {
           }else{
             fl = 5;
           }
-        }else
-        if(fl == 5){
+        }else if(fl == 4){
+          mecanum.driveCartesian(0, 0, 0);
+          fl = 5;
+        }
+        if(fl == 5 && Pitch < 5){
+          mecanum.driveCartesian(0.5, 0, 0);
+        }else if(fl == 5){
+          fl = 6;
+        }
+        if(fl == 6){
           goodCodingPracticesBalance();
         }
       break;
@@ -700,7 +708,7 @@ public class Robot extends TimedRobot {
   public void goodCodingPracticesBalance(){
     Pitch = Alex.getPitch();
 
-    double outPut = Pitch*0.012;
+    double outPut = Pitch*0.011;
     if(BL.get() < 0.5){
         LWS.set(true);
         LW.set(BR.get()*2);
@@ -725,13 +733,13 @@ public class Robot extends TimedRobot {
     //Arm Motor
     if(Bitterness.getRawAxis(LYAxis) <  -0.1){
       if(UpperArmLimit.getVoltage() > 3){
-        ArmMotor.set(-0.85*Bitterness.getRawAxis(axisY));
+        ArmMotor.set(-0.85*Bitterness.getRawAxis(LYAxis));
       }else{
         ArmMotor.set(0);
       }
     }else if(Bitterness.getRawAxis(LYAxis) > 0.1){
       if(LowerArmLimit.getVoltage() < 3){
-        ArmMotor.set(-0.85*Bitterness.getRawAxis(axisY));
+        ArmMotor.set(-0.85*Bitterness.getRawAxis(LYAxis));
       }else{
         ArmMotor.set(0);
       }
